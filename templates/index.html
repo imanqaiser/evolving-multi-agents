@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Four agents, nine cells</title>
+    <!-- CSS controls appearance. The simulation rules are all in model.py. -->
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 30px auto; padding: 0 16px; color: #222; }
+        button { padding: 10px 18px; cursor: pointer; }
+        button:disabled { cursor: default; }
+        form { display: inline-block; margin-right: 10px; }
+        .layout { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+        .details { flex: 1; min-width: 300px; overflow-x: auto; }
+        table { border-collapse: collapse; margin: 16px 0; }
+        th, td { border: 1px solid #aaa; padding: 10px; text-align: left; }
+        .grid { width: 330px; table-layout: fixed; }
+        .grid td { height: 100px; text-align: center; vertical-align: top; padding: 6px; }
+        .food { background: #e2f3df; }
+        .A { color: #1556b8; font-weight: bold; }
+        .B { color: #a74300; font-weight: bold; }
+        .position, .note { color: #555; font-size: 14px; }
+        .position { margin-bottom: 10px; }
+        .agent { display: block; margin-top: 5px; }
+        li { margin-bottom: 14px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <h1>Four agents, nine cells</h1>
+    <p>One click = one timestep. Each living agent takes one turn in a shuffled order.</p>
+
+    <!-- Submitting a form calls the matching POST route in app.py. -->
+    <form action="/step" method="post">
+        <button type="submit" {% if not model.running %}disabled{% endif %}>Next timestep</button>
+    </form>
+    <form action="/reset" method="post">
+        <button type="submit">Reset</button>
+    </form>
+
+    <p id="summary">
+        <strong>Timestep {{ model.steps }}</strong> ·
+        A alive: {{ model.population_a }} · B alive: {{ model.population_b }} ·
+        Food on grid: {{ '%.2f' | format(model.environmental_resources) }}
+    </p>
+
+    <div class="layout">
+        <div>
+            <!-- Flask's template loops create one HTML row per grid row. -->
+            <table class="grid" aria-label="Simulation grid">
+                {% for row in grid %}
+                <tr>
+                    {% for cell in row %}
+                    <td {% if cell.food > 0 %}class="food"{% endif %}>
+                        <div class="position">{{ cell.position }}</div>
+                        Food: {{ '%.2f' | format(cell.food) }}
+                        <!-- List every occupant so agents cannot hide each other. -->
+                        {% for agent in cell.agents %}
+                        <span class="agent {{ agent.population }}">{{ agent.name }}</span>
+                        {% endfor %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+            <p class="note">Positions: (row, column), starting at (0, 0).<br>
+                <span class="A">Blue = A.</span> <span class="B">Orange = B.</span> Green = food.</p>
+        </div>
+
+        <div class="details">
+            <h2>All four agents</h2>
+            <table id="agents">
+                <thead>
+                    <tr><th>Agent</th><th>Status</th><th>Position</th><th>Resources</th><th>Age</th><th>Exploration</th></tr>
+                </thead>
+                <tbody>
+                    {% for agent in model.all_agents %}
+                    <tr>
+                        <td class="{{ agent.population }}">{{ agent.name }}</td>
+                        <td>{{ agent.status }}</td>
+                        <td>{{ agent.position }}</td>
+                        <td>{{ '%.2f' | format(agent.resources) }}</td>
+                        <td>{{ agent.age }}</td>
+                        <td>{{ agent.genome.exploratory_tendency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="note">Dead agents stay in this table at their last position. Only living agents appear on the grid.</p>
+            <h2>What happened this timestep?</h2>
+            <ol id="actions">
+                {% for message in model.messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+
+    {% if not model.running %}
+    <p><strong>All agents have died. Their final states remain above. Press Reset to start again.</strong></p>
+    {% endif %}
+
+    <h2>The rules</h2>
+    <p>Each agent sees its current cell and its eight neighbors. Usually it chooses the cell with
+        the most food; ties are random. It has a 30% × exploration chance of trying a random
+        neighboring cell instead. If it sees no food, it searches a neighboring cell.</p>
+    <p>Move at most one cell, collect all its food, pay {{ config.MOVEMENT_COST }} if moving,
+        pay {{ config.METABOLIC_COST }} to survive, and age by one. After everyone's turn,
+        patches regrow by {{ config.REGENERATION_RATE }} up to their starting amounts.
+        Death happens at zero resources or age {{ config.MAXIMUM_AGE }}.</p>
+    <p>Agents can share a cell. Earlier arrivals take the available food first.
+        There is no fighting, sharing, or reproduction yet. Both populations follow the same rules.</p>
+
+    <details>
+        <summary>Stored genome traits</summary>
+        <p>Only exploration affects behavior. The other traits are stored for later.</p>
+        <table>
+            <tr><th>Agent</th><th>Exploration</th><th>Risk tolerance</th><th>Sociability</th><th>Cooperative tendency</th></tr>
+            {% for agent in model.all_agents %}
+            <tr>
+                <td>{{ agent.name }}</td>
+                {% for value in agent.genome.values() %}
+                <td>{{ '%.2f' | format(value) }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </details>
+</body>
+</html>
