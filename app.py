@@ -1,6 +1,6 @@
 # Flask serves the page. Mesa handles the simulation in model.py.
 # Run this file with: python app.py
-from flask import Flask, redirect, render_template, url_for
+from flask import Flask, redirect, render_template, request, url_for
 
 import config
 from model import SocietyModel
@@ -28,6 +28,7 @@ def show_simulation():
             cells.append({
                 "position": (row, column),
                 "food": model.food[(row, column)],
+                "capacity": model.capacity[(row, column)],
                 "agents": occupants,
             })
         grid.append(cells)
@@ -51,8 +52,11 @@ def next_timestep():
 def reset_simulation():
     # Replace the old simulation with a fresh starting world.
     global model
-    model = SocietyModel()
-    print("Simulation reset to timestep 0.", flush=True)
+    environment_name = request.form.get("environment", model.environment_name)
+    if environment_name not in config.ENVIRONMENTS:
+        return "Unknown environment preset.", 400
+    model = SocietyModel(environment_name)
+    print(f"Simulation reset to timestep 0: {environment_name}.", flush=True)
     return redirect(url_for("show_simulation"))
 
 

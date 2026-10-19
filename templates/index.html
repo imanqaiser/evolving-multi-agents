@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Four agents, nine cells</title>
+    <title>Four agents, nine cells — V0.2</title>
     <!-- CSS controls appearance. The simulation rules are all in model.py. -->
     <style>
         body { font-family: Arial, sans-serif; max-width: 1200px; margin: 30px auto; padding: 0 16px; color: #222; }
@@ -26,7 +26,7 @@
     </style>
 </head>
 <body>
-    <h1>Four agents, nine cells</h1>
+    <h1>Four agents, nine cells — V0.2</h1>
     <p>One click = one timestep. Each living agent takes one turn in a shuffled order.</p>
 
     <!-- Submitting a form calls the matching POST route in app.py. -->
@@ -34,14 +34,26 @@
         <button type="submit" {% if not model.running %}disabled{% endif %}>Next timestep</button>
     </form>
     <form action="/reset" method="post">
-        <button type="submit">Reset</button>
+        <label for="environment">Environment:</label>
+        <select id="environment" name="environment">
+            {% for name in config.ENVIRONMENTS %}
+            <option value="{{ name }}" {% if name == model.environment_name %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Reset with selected preset</button>
     </form>
+    <p class="note">Choosing a preset takes effect when you press Reset. Reset repeats the same random seed.</p>
 
     <p id="summary">
-        <strong>Timestep {{ model.steps }}</strong> ·
+        <strong>{{ model.environment_name }} · Timestep {{ model.steps }}</strong> ·
         A alive: {{ model.population_a }} · B alive: {{ model.population_b }} ·
         Food on grid: {{ '%.2f' | format(model.environmental_resources) }}
     </p>
+    <p id="encounter-counts">
+        Cross-population encounters this timestep: <strong>{{ model.encounters_per_timestep }}</strong> ·
+        Cumulative cross-population encounters: <strong>{{ model.cumulative_encounters }}</strong>
+    </p>
+    <p>Total deaths: {{ model.starvation_deaths }} from starvation · {{ model.old_age_deaths }} from old age</p>
 
     <div class="layout">
         <div>
@@ -53,6 +65,7 @@
                     <td {% if cell.food > 0 %}class="food"{% endif %}>
                         <div class="position">{{ cell.position }}</div>
                         Food: {{ '%.2f' | format(cell.food) }}
+                        <div class="note">{% if cell.capacity > 0 %}Patch: max {{ cell.capacity }}{% else %}No growth{% endif %}</div>
                         <!-- List every occupant so agents cannot hide each other. -->
                         {% for agent in cell.agents %}
                         <span class="agent {{ agent.population }}">{{ agent.name }}</span>
@@ -95,6 +108,30 @@
         </div>
     </div>
 
+    <h2>Encounter snapshots this timestep</h2>
+    <p class="note">Checked after each turn, after costs and death checks. Each living cross-population pair is
+        recorded once per timestep, at its first detection. These snapshots may differ from the final grid above.</p>
+    {% if model.encounters_this_step %}
+    <div style="overflow-x: auto;">
+        <table id="encounters">
+            <tr><th>Timestep</th><th>First agent (ID, population)</th><th>Position</th><th>Resources</th>
+                <th>Second agent (ID, population)</th><th>Position</th><th>Resources</th><th>Distance</th></tr>
+            {% for encounter in model.encounters_this_step %}
+            <tr>
+                <td>{{ encounter.timestep }}</td>
+                <td>{{ encounter.agent_1_name }} ({{ encounter.agent_1_id }}, {{ encounter.population_1 }})</td>
+                <td>{{ encounter.position_1 }}</td><td>{{ '%.2f' | format(encounter.resources_1) }}</td>
+                <td>{{ encounter.agent_2_name }} ({{ encounter.agent_2_id }}, {{ encounter.population_2 }})</td>
+                <td>{{ encounter.position_2 }}</td><td>{{ '%.2f' | format(encounter.resources_2) }}</td>
+                <td>{{ encounter.distance }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% else %}
+    <p>No cross-population encounters recorded this timestep.</p>
+    {% endif %}
+
     {% if not model.running %}
     <p><strong>All agents have died. Their final states remain above. Press Reset to start again.</strong></p>
     {% endif %}
@@ -103,12 +140,16 @@
     <p>Each agent sees its current cell and its eight neighbors. Usually it chooses the cell with
         the most food; ties are random. It has a 30% × exploration chance of trying a random
         neighboring cell instead. If it sees no food, it searches a neighboring cell.</p>
-    <p>Move at most one cell, collect all its food, pay {{ config.MOVEMENT_COST }} if moving,
-        pay {{ config.METABOLIC_COST }} to survive, and age by one. After everyone's turn,
-        patches regrow by {{ config.REGENERATION_RATE }} up to their starting amounts.
-        Death happens at zero resources or age {{ config.MAXIMUM_AGE }}.</p>
+    <p>The active preset starts each agent with {{ model.environment.starting_resources }} resources and has
+        {{ model.environment.patches | length }} patches, each starting with {{ model.environment.food_per_patch }} food.</p>
+    <p>Move at most one cell, collect all its food, pay {{ model.environment.movement_cost }} if moving,
+        pay {{ model.environment.survival_cost }} to survive, and age by one. After everyone's turn,
+        patches regrow by {{ model.environment.regeneration }} up to capacity.
+        Death happens at zero resources or age {{ model.environment.maximum_age }}.
+        If both happen on the same turn, the death is counted as starvation.</p>
     <p>Agents can share a cell. Earlier arrivals take the available food first.
-        There is no fighting, sharing, or reproduction yet. Both populations follow the same rules.</p>
+        Encounters mean the same cell (distance 0) or adjacent cells, including diagonals (distance 1).
+        They have no consequences. There is no fighting, sharing, or reproduction yet. Both populations follow the same rules.</p>
 
     <details>
         <summary>Stored genome traits</summary>

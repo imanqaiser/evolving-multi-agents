@@ -13,7 +13,7 @@ class SocietyAgent(mesa.Agent):
         self.name = name
         self.population = name[0]  # A1 and A2 belong to A; B1 and B2 belong to B.
         self.position = position
-        self.resources = config.STARTING_RESOURCES
+        self.resources = model.environment["starting_resources"]
         self.age = 0
         self.alive = True
         self.status = "Alive"
@@ -90,8 +90,8 @@ class SocietyAgent(mesa.Agent):
         self.model.food[destination] = 0.0
         movement_cost = 0.0
         if destination != old_position:
-            movement_cost = config.MOVEMENT_COST
-        self.resources += collected - movement_cost - config.METABOLIC_COST
+            movement_cost = self.model.environment["movement_cost"]
+        self.resources += collected - movement_cost - self.model.environment["survival_cost"]
         self.age += 1
 
         # Death removes an agent from Mesa's living-agent list.
@@ -99,9 +99,11 @@ class SocietyAgent(mesa.Agent):
         if self.resources <= 0:
             self.alive = False
             self.status = "Dead: resources ran out"
-        elif self.age >= config.MAXIMUM_AGE:
+            self.model.starvation_deaths += 1
+        elif self.age >= self.model.environment["maximum_age"]:
             self.alive = False
-            self.status = f"Dead: reached age {config.MAXIMUM_AGE}"
+            self.status = f"Dead: reached age {self.model.environment['maximum_age']}"
+            self.model.old_age_deaths += 1
         if not self.alive:
             self.remove()
 
@@ -115,28 +117,46 @@ class SocietyAgent(mesa.Agent):
             f"{movement}: {reason}. Saw agents: {', '.join(seen) or 'none'}. "
             f"Others at destination: {', '.join(cellmates) or 'none'}. "
             f"Resources: {before:.2f} + {collected:.2f} food "
-            f"− {movement_cost:.2f} movement − {config.METABOLIC_COST:.2f} survival "
+            f"− {movement_cost:.2f} movement − {self.model.environment['survival_cost']:.2f} survival "
             f"= {self.resources:.2f}. Age: {self.age}. {self.status}."
         )
         self.model.messages.append(f"{self.name}: {self.last_action}")
+        # Observe encounters only. This never changes any agent's decisions.
+        self.model.detect_encounters()
 
 
 class SocietyModel(mesa.Model):
     # Create the world and its four agents.
-    def __init__(self):
+    def __init__(self, environment_name=config.DEFAULT_ENVIRONMENT):
         # A seed makes Reset repeat the same sequence of random choices.
         super().__init__(rng=config.SEED)
+        self.environment_name = environment_name
+        # Copy the preset so this run keeps its own settings.
+        self.environment = config.ENVIRONMENTS[environment_name].copy()
         self.food = {}
+        self.capacity = {}
         for row in range(config.GRID_SIZE):
             for column in range(config.GRID_SIZE):
-                self.food[(row, column)] = config.RESOURCE_CAPACITY[row][column]
+                self.food[(row, column)] = 0.0
+                self.capacity[(row, column)] = 0.0
+        for position in self.environment["patches"]:
+            self.food[position] = self.environment["food_per_patch"]
+            self.capacity[position] = self.environment["food_per_patch"]
 
         self.all_agents = []
         for name, position, exploration in config.STARTING_AGENTS:
             agent = SocietyAgent(self, name, position, exploration)
             self.all_agents.append(agent)
 
-        self.messages = ["Starting world. Press Next timestep to see four actions."]
+        self.messages = [f"Starting {environment_name} world. Press Next timestep."]
+        self.encounters_this_step = []
+        self.encounters = []  # Permanent snapshots from every completed timestep.
+        self.encounter_pairs = set()  # A set remembers pairs already seen this step.
+        self.encounters_per_timestep = 0
+        self.cumulative_encounters = 0
+        # Death counts are cumulative for the run, not just the latest timestep.
+        self.starvation_deaths = 0
+        self.old_age_deaths = 0
         # DataCollector saves one row of numbers per timestep for later analysis.
         # These strings name attributes updated in collect_data() below.
         self.datacollector = DataCollector(model_reporters={
@@ -146,6 +166,10 @@ class SocietyModel(mesa.Model):
             "Environmental resources": "environmental_resources",
             "Average agent resources": "average_resources",
             "Average age": "average_age",
+            "Encounters per timestep": "encounters_per_timestep",
+            "Cumulative encounters": "cumulative_encounters",
+            "Deaths from starvation": "starvation_deaths",
+            "Deaths from old age": "old_age_deaths",
         })
         self.collect_data()
 
@@ -156,6 +180,54 @@ class SocietyModel(mesa.Model):
             if agent.population == population:
                 count += 1
         return count
+
+    # Check each living pair after a turn, including pairs not involving the mover.
+    # A pair may be detected repeatedly, but is recorded only on its first sighting.
+    def detect_encounters(self):
+        living_agents = list(self.agents)
+        for first_index in range(len(living_agents)):
+            first = living_agents[first_index]
+            # Start after first_index so we never check an agent against itself.
+            for second_index in range(first_index + 1, len(living_agents)):
+                second = living_agents[second_index]
+                if first.population == second.population:
+                    continue
+
+                # Chebyshev distance: the larger row/column difference.
+                # 0 = same cell, 1 = adjacent (including diagonals).
+                row_distance = abs(first.position[0] - second.position[0])
+                column_distance = abs(first.position[1] - second.position[1])
+                distance = max(row_distance, column_distance)
+                pair = tuple(sorted((first.unique_id, second.unique_id)))
+                if distance > 1 or pair in self.encounter_pairs:
+                    continue
+
+                self.encounter_pairs.add(pair)
+                record = {
+                    "timestep": self.steps,
+                    "agent_1_id": first.unique_id,
+                    "agent_2_id": second.unique_id,
+                    "agent_1_name": first.name,
+                    "agent_2_name": second.name,
+                    "population_1": first.population,
+                    "population_2": second.population,
+                    "position_1": first.position,
+                    "position_2": second.position,
+                    "resources_1": first.resources,
+                    "resources_2": second.resources,
+                    "distance": distance,
+                }
+                self.encounters_this_step.append(record)
+                self.encounters.append(record)
+                self.encounters_per_timestep += 1
+                self.cumulative_encounters += 1
+                self.messages.append(
+                    f"Encounter: {first.name} (ID {first.unique_id}, {first.population}) "
+                    f"at {first.position}, resources {first.resources:.2f}; "
+                    f"{second.name} (ID {second.unique_id}, {second.population}) "
+                    f"at {second.position}, resources {second.resources:.2f}. "
+                    f"Distance {distance}. Recorded only; no interaction."
+                )
 
     # Calculate the summary values, then let Mesa save them as one data row.
     def collect_data(self):
@@ -177,6 +249,9 @@ class SocietyModel(mesa.Model):
     # Advance the whole world by one timestep.
     def step(self):
         self.messages = []
+        self.encounters_this_step = []
+        self.encounter_pairs = set()
+        self.encounters_per_timestep = 0
         # Mesa increases self.steps automatically before this function runs.
         # shuffle_do calls each living agent's step() once, in a random order.
         self.agents.shuffle_do("step")
@@ -184,14 +259,18 @@ class SocietyModel(mesa.Model):
         # Refill each food cell, without going above its original capacity.
         restored = 0.0
         for position in self.food:
-            row, column = position
             before = self.food[position]
             self.food[position] = min(
-                config.RESOURCE_CAPACITY[row][column],
-                before + config.REGENERATION_RATE,
+                self.capacity[position],
+                before + self.environment["regeneration"],
             )
             restored += self.food[position] - before
         self.messages.append(f"Food regenerated by {restored:.2f} units after all turns.")
+        self.messages.append(
+            f"Cross-population encounters this timestep: {self.encounters_per_timestep}; "
+            f"cumulative: {self.cumulative_encounters}. "
+            f"Total deaths: {self.starvation_deaths} starvation, {self.old_age_deaths} old age."
+        )
         self.running = len(self.agents) > 0
         self.collect_data()
 
