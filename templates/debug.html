@@ -176,19 +176,37 @@
     {% endif %}
 
     <h2>The rules</h2>
-    <p>Each agent sees its current cell and its eight neighbors. Usually it chooses the cell with
-        the most food; ties are random. It has a 30% × exploration chance of trying a random
-        neighboring cell instead. If it sees no food, it searches a neighboring cell.</p>
-    <p>The active preset starts each agent with {{ model.environment.starting_resources }} resources and has
-        {{ model.environment.patches | length }} patches, each starting with {{ model.environment.food_per_patch }} food.</p>
-    <p>Move at most one cell, collect all its food, pay {{ model.environment.movement_cost }} if moving,
-        pay {{ model.environment.survival_cost }} to survive, and age by one. After everyone's turn,
-        eligible same-population parents may reproduce, then patches regrow by {{ model.environment.regeneration }} up to capacity.
-        Death happens at zero resources or age {{ model.environment.maximum_age }}.
+    <p>A timestep has three phases. (1) Every agent moves, in a random order; meeting a rival on the way
+        leads to a confrontation. (2) The agents in each cell split that cell's food equally. (3) Every agent
+        eats, pays its costs, ages, may die, and works or plants farms. Then eligible same-population parents
+        may reproduce, unworked farms are abandoned, and food regrows.</p>
+    <p>Moving: each agent sees its current cell and its eight neighbors. On its own population's farm, an
+        agent that is still saving up (fewer than {{ config.REPRODUCTION_THRESHOLD }} resources) stays to tend it
+        with probability 1 − risk tolerance. Otherwise: if a rival is in view, it ignores rivals with probability =
+        sociability, or else keeps out of every cell on or next to a rival. If a rival farm with food is in view, it is
+        willing to raid it with probability 1 − cooperative tendency, or else leaves rival farms alone. It then
+        chooses the cell with the most food; ties are random. If even that is less than survival + movement cost,
+        it explores with probability = exploration: it jumps two cells into unseen territory, paying the movement
+        cost twice. If it sees no food, it searches a neighboring cell.</p>
+    <p>Confrontations: when agents from different populations end up in the same or neighboring cells, each one
+        cooperates with probability = cooperative tendency (halved for an agent with no resources) or competes.
+        Both cooperate: nothing happens. One competes: it robs the other of {{ (config.STEAL_FRACTION * 100) | round | int }}%
+        of its resources. Both compete: each fights on with probability = risk tolerance or backs down. One fighting on
+        robs the other; both fighting on each pay {{ config.FIGHT_COST }}, and the winner (richer fighters win more often)
+        robs the loser.</p>
+    <p>Farms: only fertile land (wild patches) can be farmed. At the end of its turn, an agent with at least
+        {{ config.PLANT_MIN_RESOURCES }} resources plants a farm with probability 1 − risk tolerance, paying
+        {{ config.PLANT_COST }}: on its own cell, or, when working its population's farm, on a fertile neighboring cell.
+        Farms hold up to {{ config.FARM_CAPACITY }} food and grow {{ model.environment.farm_growth }} per timestep;
+        anyone in the owning population may eat from them. Eating from the other population's farm is theft.
+        A farm nobody from its population works for {{ config.FARM_ABANDON_STEPS }} timesteps goes back to wild land.</p>
+    <p>The active preset starts each agent with {{ model.environment.starting_resources }} resources. Wild patches hold
+        up to {{ model.environment.food_per_patch }} food and regrow {{ model.environment.regeneration }} per timestep.
+        Moving costs {{ model.environment.movement_cost }} per cell, surviving costs {{ model.environment.survival_cost }}
+        per timestep. Death happens at zero resources or age {{ model.environment.maximum_age }}.
         If both happen on the same turn, the death is counted as starvation.</p>
-    <p>Agents can share a cell. Earlier arrivals take the available food first.
-        Encounters mean the same cell (distance 0) or adjacent cells, including diagonals (distance 1).
-        Cross-population encounters have no consequences. There is no fighting or sharing. Both populations follow the same rules.</p>
+    <p>Encounters mean the same cell (distance 0) or adjacent cells, including diagonals (distance 1).
+        Both populations follow the same rules.</p>
     <p>Reproduction requires same-population neighbors, each at least age {{ config.MIN_REPRODUCTION_AGE }},
         each holding at least {{ config.REPRODUCTION_THRESHOLD }} resources, and both off cooldown.
         Each parent contributes {{ config.REPRODUCTION_COST_PER_PARENT }}; the child starts with
@@ -202,7 +220,7 @@
 
     <details>
         <summary>Stored genome traits</summary>
-        <p>Only exploration affects behavior. The other traits are stored for later.</p>
+        <p>All four traits affect behavior; see the rules above.</p>
         <table>
             <tr><th>Agent</th><th>Exploration</th><th>Risk tolerance</th><th>Sociability</th><th>Cooperative tendency</th></tr>
             {% for agent in model.all_agents %}

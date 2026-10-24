@@ -6,12 +6,15 @@ const COLORS = { A: "#1556b8", B: "#c2560c" };
 const FOOD_EMPTY = [225, 236, 216];  // Depleted patch: pale green (red, green, blue).
 const FOOD_FULL = [61, 139, 61];     // Full patch: deep green.
 const GROUND = "#f3efe6";            // Cells where no food grows.
+// Gene name, label, and what it controls (the same rules as in model.py).
 const TRAITS = [
-    ["exploratory_tendency", "Exploration"],
-    ["risk_tolerance", "Risk tolerance"],
-    ["sociability", "Sociability"],
-    ["cooperative_tendency", "Cooperation"],
+    ["exploratory_tendency", "Exploration", "jump two cells when food nearby is poor"],
+    ["risk_tolerance", "Risk tolerance", "fight on and roam; low = tend and plant farms"],
+    ["sociability", "Sociability", "ignore rivals instead of keeping a distance"],
+    ["cooperative_tendency", "Cooperation", "leave rivals alone and respect their farms"],
 ];
+const FARM_EMPTY = { A: [214, 226, 245], B: [248, 226, 210] }; // Farm tint when empty.
+const FARM_FULL = { A: [127, 159, 214], B: [223, 159, 116] };  // Farm tint when full.
 const SPEEDS = [1, 2, 5, 10, 20, 40, 80];  // Timesteps per second for each slider position.
 
 let state = null;        // The latest JSON from the server.
@@ -80,8 +83,6 @@ async function resetSimulation() {
         environment: byId("environment").value,
     });
     forgetRun();
-    // Individual encounters flood the log in the large world, so start with them hidden there.
-    document.querySelector('[data-kind="encounter"]').checked = newState.world === "SMALL";
     receive(newState);
 }
 
@@ -182,6 +183,7 @@ function render() {
     renderStats();
     drawGrid();
     renderTraits();
+    renderBehaviour();
     renderInspector();
     renderEvents();
     drawCharts();
@@ -202,11 +204,22 @@ function prepareCanvas(canvas) {
     return { context, width, height };
 }
 
-// Blend from the pale "empty patch" green to the deep "full patch" green.
-function foodColor(fraction) {
+// Blend between two colours: fraction 0 gives "empty", 1 gives "full".
+function blend(empty, full, fraction) {
     const f = Math.max(0, Math.min(1, fraction));
-    const mixed = FOOD_EMPTY.map((empty, index) => Math.round(empty + (FOOD_FULL[index] - empty) * f));
+    const mixed = empty.map((value, index) => Math.round(value + (full[index] - value) * f));
     return `rgb(${mixed.join(",")})`;
+}
+
+// Wild food is green; a farm is tinted with its population's colour.
+function cellColor(row, column) {
+    const capacity = state.capacity[row][column];
+    const fraction = capacity > 0 ? state.food[row][column] / capacity : 0;
+    const owner = state.farms[row][column];
+    if (owner) {
+        return blend(FARM_EMPTY[owner], FARM_FULL[owner], fraction);
+    }
+    return capacity > 0 ? blend(FOOD_EMPTY, FOOD_FULL, fraction) : GROUND;
 }
 
 // Where to put each agent inside a cell. One agent sits in the middle; more
@@ -231,16 +244,17 @@ function drawGrid() {
     const cell = width / size;
     const large = cell >= 70; // Big cells (SMALL world) have room for text labels.
 
-    // 1. Ground and food.
+    // 1. Barren land, wild food, and farms.
     for (let row = 0; row < size; row++) {
         for (let column = 0; column < size; column++) {
             const capacity = state.capacity[row][column];
-            context.fillStyle = capacity > 0 ? foodColor(state.food[row][column] / capacity) : GROUND;
+            context.fillStyle = cellColor(row, column);
             context.fillRect(column * cell, row * cell, cell, cell);
             if (large && capacity > 0) {
+                const owner = state.farms[row][column];
                 context.fillStyle = state.food[row][column] / capacity > 0.55 ? "white" : "#4a5a40";
                 context.font = "12px sans-serif";
-                context.fillText(`food ${format(state.food[row][column])} / ${format(capacity, 1)}`,
+                context.fillText(`${owner ? `farm ${owner}` : "food"} ${format(state.food[row][column])} / ${format(capacity, 1)}`,
                     column * cell + 6, row * cell + 16);
             }
         }
@@ -313,7 +327,18 @@ function drawGrid() {
         }
     }
 
-    // 6. Outline the clicked cell.
+    // 6. Outline cells where someone was robbed or a farm was raided this
+    //    timestep (pink), or where a fight happened (red).
+    context.lineWidth = Math.max(1.5, Math.min(3, cell * 0.08));
+    for (const event of events) {
+        if ((event.kind === "compete" || event.kind === "theft") && event.timestep === state.timestep) {
+            const [row, column] = event.position;
+            context.strokeStyle = event.text.includes("fight") ? "#b3261e" : "#d6336c";
+            context.strokeRect(column * cell + 1.5, row * cell + 1.5, cell - 3, cell - 3);
+        }
+    }
+
+    // 7. Outline the clicked cell.
     if (selectedCell) {
         context.strokeStyle = "#1f2328";
         context.lineWidth = 2;
@@ -372,10 +397,13 @@ function renderStats() {
         ["Births", stats.cumulative_births, `+${stats.births_this_step} this step`],
         ["Deaths", stats.starvation_deaths + stats.old_age_deaths,
             `${stats.starvation_deaths} starved · ${stats.old_age_deaths} old age`],
+        ["Farms", `${stats.farms_a} · ${stats.farms_b}`, "A · B, right now"],
+        ["Stolen", `${Math.round(stats.cumulative_stolen.A)} · ${Math.round(stats.cumulative_stolen.B)}`,
+            "taken by A · by B, in total"],
+        ["Fights", stats.cumulative_fights, `+${stats.fights_this_step} this step`],
         ["Encounters", stats.cumulative_encounters, `+${stats.encounters_per_timestep} this step`],
-        ["Food on grid", format(stats.environmental_resources, 1), "units in all patches"],
+        ["Food on grid", format(stats.environmental_resources, 1), "wild and farmed"],
         ["Avg resources", format(stats.average_resources), "per living agent"],
-        ["Agents alive", stats.population_a + stats.population_b, "both populations"],
     ];
     byId("stats").innerHTML = tiles.map(([label, value, detail, population]) => `
         <div>
@@ -393,19 +421,61 @@ function traitBar(value, population, mark) {
 
 function renderTraits() {
     let html = "";
-    for (const [trait, label] of TRAITS) {
-        html += `<div class="trait-group"><div class="trait-group-title">${label}</div>`;
+    for (const [trait, label, hint] of TRAITS) {
+        html += `<div class="trait-group"><div class="trait-group-title">${label}
+            <span class="trait-hint">· chance to ${hint}</span></div>`;
         for (const population of ["A", "B"]) {
             const value = latest(`Population ${population} average ${trait}`);
+            const extinct = latest(`Population ${population}`) === 0;
             html += `<div class="trait-row">
                 <span class="trait-name">Population ${population}</span>
-                ${traitBar(value, population)}
-                <span class="trait-value">${format(value)}</span>
+                ${extinct ? `<span class="trait-hint">died out</span>` : traitBar(value, population)}
+                <span class="trait-value">${extinct ? "—" : format(value)}</span>
             </div>`;
         }
         html += "</div>";
     }
     byId("traits").innerHTML = html;
+}
+
+// Total of a per-timestep DataCollector column over the most recent steps.
+function recentTotal(column, steps) {
+    const values = history[column] || [];
+    let total = 0;
+    for (const value of values.slice(-steps)) {
+        total += value;
+    }
+    return total;
+}
+
+// One bar split into the shares of two choices, e.g. avoid vs ignore.
+function splitBar(first, second, firstCount, secondCount) {
+    const total = firstCount + secondCount;
+    if (total === 0) {
+        return `<div class="split"></div>`;
+    }
+    const firstPercent = Math.round((100 * firstCount) / total);
+    return `<div class="split" title="${firstCount} ${first}, ${secondCount} ${second}">
+        <span class="${first}" style="width: ${firstPercent}%">${firstPercent >= 18 ? `${firstPercent}% ${first}` : ""}</span>
+        <span class="${second}" style="width: ${100 - firstPercent}%">${100 - firstPercent >= 18 ? `${100 - firstPercent}% ${second}` : ""}</span>
+    </div>`;
+}
+
+// What each population actually did when meeting rivals, over the last 50 steps.
+function renderBehaviour() {
+    let html = "";
+    for (const [first, second, title] of [["avoid", "ignore", "Rival in view while moving"],
+                                          ["raid", "respect", "Rival farm with food in view"],
+                                          ["cooperate", "compete", "Meeting a rival"]]) {
+        html += `<div class="trait-group"><div class="trait-group-title">${title}</div>`;
+        for (const population of ["A", "B"]) {
+            html += `<div class="split-row"><span class="trait-name">Population ${population}</span>
+                ${splitBar(first, second, recentTotal(`Population ${population} ${first}`, 50),
+                           recentTotal(`Population ${population} ${second}`, 50))}</div>`;
+        }
+        html += "</div>";
+    }
+    byId("behaviour").innerHTML = html;
 }
 
 function renderInspector() {
@@ -523,17 +593,22 @@ function drawChart(canvas, lines, yMax) {
     context.textAlign = "start";
 
     // Very long runs have more points than pixels, so skip some points.
+    // A null value (no data at that timestep) leaves a gap in the line.
     const every = Math.max(1, Math.floor(count / plotWidth));
     for (const line of lines) {
         context.strokeStyle = line.color;
         context.lineWidth = 1.8;
         context.beginPath();
+        let drawing = false;
         line.values.forEach((value, index) => {
             if (index % every !== 0 && index !== line.values.length - 1) {
                 return;
             }
-            if (index === 0) {
+            if (value === null) {
+                drawing = false;
+            } else if (!drawing) {
                 context.moveTo(toX(index), toY(value));
+                drawing = true;
             } else {
                 context.lineTo(toX(index), toY(value));
             }
@@ -542,19 +617,77 @@ function drawChart(canvas, lines, yMax) {
     }
 }
 
+// A column's values, with a gap (null) wherever the population had no living
+// agents. The model stores 0 as the average of an empty population, which
+// would look like the gene dropping to zero.
+function whileAlive(population, column) {
+    const counts = history[`Population ${population}`] || [];
+    return (history[column] || []).map((value, index) => (counts[index] > 0 ? value : null));
+}
+
+// Sum of a per-timestep column over a sliding window of steps.
+function windowTotal(column, window) {
+    const values = history[column] || [];
+    const totals = [];
+    let total = 0;
+    for (let index = 0; index < values.length; index++) {
+        total += values[index];
+        if (index >= window) {
+            total -= values[index - window];
+        }
+        totals.push(total);
+    }
+    return totals;
+}
+
+// Percentage of "first" among first + second, over a sliding window of steps.
+// Returns null where there was nothing to count (e.g. no contests at all).
+function rateOverTime(firstColumn, secondColumn, window) {
+    const first = history[firstColumn] || [];
+    const second = history[secondColumn] || [];
+    const rates = [];
+    let firstTotal = 0;
+    let secondTotal = 0;
+    for (let index = 0; index < first.length; index++) {
+        firstTotal += first[index];
+        secondTotal += second[index];
+        if (index >= window) {
+            firstTotal -= first[index - window];
+            secondTotal -= second[index - window];
+        }
+        const total = firstTotal + secondTotal;
+        rates.push(total > 0 ? (100 * firstTotal) / total : null);
+    }
+    return rates;
+}
+
 function drawCharts() {
     drawChart(byId("chart-population"), [
         { values: history["Population A"] || [], color: COLORS.A },
         { values: history["Population B"] || [], color: COLORS.B },
+    ]);
+    drawChart(byId("chart-farms"), [
+        { values: history["Population A farms"] || [], color: COLORS.A },
+        { values: history["Population B farms"] || [], color: COLORS.B },
+    ]);
+    drawChart(byId("chart-stolen"), [
+        { values: windowTotal("Population A stolen", 25), color: COLORS.A },
+        { values: windowTotal("Population B stolen", 25), color: COLORS.B },
     ]);
     drawChart(byId("chart-food"), [
         { values: history["Environmental resources"] || [], color: "#3d8b3d" },
     ]);
     for (const [trait] of TRAITS) {
         drawChart(byId(`chart-${trait}`), [
-            { values: history[`Population A average ${trait}`] || [], color: COLORS.A },
-            { values: history[`Population B average ${trait}`] || [], color: COLORS.B },
+            { values: whileAlive("A", `Population A average ${trait}`), color: COLORS.A },
+            { values: whileAlive("B", `Population B average ${trait}`), color: COLORS.B },
         ], 1);
+    }
+    for (const [chart, first, second] of [["cooperate-rate", "cooperate", "compete"], ["avoid-rate", "avoid", "ignore"]]) {
+        drawChart(byId(`chart-${chart}`), [
+            { values: rateOverTime(`Population A ${first}`, `Population A ${second}`, 25), color: COLORS.A },
+            { values: rateOverTime(`Population B ${first}`, `Population B ${second}`, 25), color: COLORS.B },
+        ], 100);
     }
 }
 
@@ -612,7 +745,9 @@ function onGridHover(mouseEvent) {
         names += ` +${agents.length - 6} more`;
     }
     const capacity = state.capacity[row][column];
-    const food = capacity > 0 ? `food ${format(state.food[row][column])} / ${format(capacity, 1)}` : "no food grows";
+    const owner = state.farms[row][column];
+    const kind = owner ? `farm of ${owner}` : "wild food";
+    const food = capacity > 0 ? `${kind} ${format(state.food[row][column])} / ${format(capacity, 1)}` : "barren land";
     tooltip.innerHTML = `(${row}, ${column}) · ${food}${names ? "<br>" + escapeHtml(names) : ""}`;
     const box = byId("grid").getBoundingClientRect();
     tooltip.style.left = `${mouseEvent.clientX - box.left + 14}px`;
@@ -659,7 +794,4 @@ document.addEventListener("keydown", (keyEvent) => {
 
 window.addEventListener("resize", () => { if (state) render(); });
 
-loadState().then(() => {
-    document.querySelector('[data-kind="encounter"]').checked = state.world === "SMALL";
-    renderEvents();
-}).catch(showError);
+loadState().catch(showError);

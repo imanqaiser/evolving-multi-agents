@@ -249,6 +249,141 @@ class ReproductionTests(unittest.TestCase):
         self.assertEqual(kinds.count('death'), 3)
         self.assertIn('extinction', kinds)
 
+    # Keep A1 and B1 together on (1, 1) with plenty of resources, everyone else removed.
+    def make_rivals(self, first_genes, second_genes):
+        model = SocietyModel()
+        first, second = model.all_agents[0], model.all_agents[2]
+        for agent in model.all_agents:
+            if agent not in [first, second]:
+                agent.alive = False
+                agent.remove()
+        for agent, genes in [(first, first_genes), (second, second_genes)]:
+            agent.position = (1, 1)
+            agent.resources = 10
+            agent.genome.update(genes)
+        model.food[(1, 1)] = 2.0
+        return model, first, second
+
+    def test_confront_both_cooperate_nothing_taken(self):
+        model, first, second = self.make_rivals({'cooperative_tendency': 1}, {'cooperative_tendency': 1})
+        model.confront(first, second)
+        self.assertEqual((first.turn_stolen, second.turn_stolen), (0.0, 0.0))
+        self.assertEqual(model.cumulative_actions['A']['cooperate'], 1)
+        self.assertEqual(model.cumulative_actions['B']['cooperate'], 1)
+
+    def test_confront_competitor_robs_cooperator(self):
+        model, first, second = self.make_rivals({'cooperative_tendency': 1}, {'cooperative_tendency': 0})
+        model.confront(first, second)
+        amount = config.STEAL_FRACTION * 10
+        self.assertEqual((first.turn_stolen, second.turn_stolen), (-amount, amount))
+        self.assertEqual(model.cumulative_stolen['B'], amount)
+        self.assertEqual(model.events[-1]['kind'], 'compete')
+        self.assertEqual(model.cumulative_fights, 0)
+
+    def test_confront_fight_costs_both_and_winner_robs_loser(self):
+        genes = {'cooperative_tendency': 0, 'risk_tolerance': 1}
+        model, first, second = self.make_rivals(genes, genes)
+        model.confront(first, second)
+        amount = config.STEAL_FRACTION * (10 - config.FIGHT_COST)
+        self.assertEqual(sorted([first.turn_stolen, second.turn_stolen]), [-amount, amount])
+        self.assertEqual((first.turn_fight_cost, second.turn_fight_cost), (config.FIGHT_COST, config.FIGHT_COST))
+        self.assertEqual(model.cumulative_fights, 1)
+
+    def test_confront_both_back_down_without_cost(self):
+        genes = {'cooperative_tendency': 0, 'risk_tolerance': 0}
+        model, first, second = self.make_rivals(genes, genes)
+        model.confront(first, second)
+        self.assertEqual((first.turn_stolen, second.turn_stolen), (0.0, 0.0))
+        self.assertEqual((first.turn_fight_cost, second.turn_fight_cost), (0.0, 0.0))
+
+    def test_confront_bold_competitor_robs_one_that_backs_down(self):
+        model, first, second = self.make_rivals({'cooperative_tendency': 0, 'risk_tolerance': 1},
+                                                {'cooperative_tendency': 0, 'risk_tolerance': 0})
+        model.confront(first, second)
+        self.assertGreater(first.turn_stolen, 0)
+        self.assertEqual(first.turn_fight_cost, 0.0)
+
+    def test_food_on_a_shared_cell_is_split_equally(self):
+        model, first, second = self.make_rivals({}, {})
+        model.share_food()
+        self.assertEqual((first.turn_food, second.turn_food), (1.0, 1.0))
+        model, first, second = self.make_pair()
+        model.food[(1, 1)] = 3.0
+        model.share_food()
+        self.assertEqual((first.turn_food, second.turn_food), (1.5, 1.5))
+
+    def test_unsociable_agent_keeps_its_distance(self):
+        model, first, second = self.make_rivals({'sociability': 0, 'exploratory_tendency': 0}, {})
+        first.position = (1, 0)
+        second.position = (2, 1)
+        for position in model.food:
+            model.food[position] = 0.0
+        model.food[(2, 0)] = 3.0
+        model.food[(0, 1)] = 1.0
+        first.step()
+        self.assertEqual(first.position, (0, 1))
+        self.assertEqual(model.cumulative_actions['A']['avoid'], 1)
+        self.assertEqual(model.cumulative_encounters, 0)
+
+    def test_cautious_agent_plants_only_on_fertile_land(self):
+        model, first, second = self.make_rivals({'risk_tolerance': 0}, {})
+        first.position = (0, 0)  # Bare land in the SMALL world.
+        first.farm()
+        self.assertEqual(model.farms, {})
+        first.position = (1, 1)  # A wild patch.
+        first.farm()
+        self.assertEqual(model.farms, {(1, 1): 'A'})
+        self.assertEqual(first.resources, 10 - config.PLANT_COST)
+        self.assertEqual(model.capacity[(1, 1)], config.FARM_CAPACITY)
+
+    def test_farms_spread_to_fertile_neighbours_and_are_abandoned(self):
+        model, first, second = self.make_rivals({'risk_tolerance': 0}, {})
+        model.plant_farm((1, 1), 'A', first)
+        first.farm()
+        self.assertEqual(len(model.farms), 2)
+        for position in model.farms:
+            self.assertGreater(model.wild_capacity[position], 0)
+        model.steps += config.FARM_ABANDON_STEPS + 1
+        model.abandon_farms()
+        self.assertEqual(model.farms, {})
+        self.assertEqual(model.capacity[(1, 1)], model.wild_capacity[(1, 1)])
+
+    def test_cautious_farmer_tends_while_saving_up(self):
+        model, first, second = self.make_rivals({'risk_tolerance': 0}, {})
+        second.position = (2, 2)
+        model.plant_farm((1, 1), 'A', first)
+        first.resources = config.REPRODUCTION_THRESHOLD - 1
+        model.food[(0, 1)] = 3.0
+        first.step()
+        self.assertEqual(first.position, (1, 1))
+        first.resources = config.REPRODUCTION_THRESHOLD
+        first.step()
+        self.assertEqual(first.position, (0, 1))
+
+    def test_eating_from_an_undefended_rival_farm_is_theft(self):
+        model, first, second = self.make_rivals({}, {})
+        model.plant_farm((1, 1), 'B', second)
+        second.position = (2, 2)
+        model.share_food()
+        self.assertEqual(first.turn_food, 2.0)
+        self.assertEqual(model.cumulative_stolen['A'], 2.0)
+        self.assertEqual(model.events[-1]['kind'], 'theft')
+
+    def test_explorer_jumps_two_cells_only_when_food_is_poor(self):
+        model, first, second = self.make_rivals({'exploratory_tendency': 1, 'sociability': 1}, {})
+        second.position = (2, 2)
+        first.position = (0, 0)
+        for position in model.food:
+            model.food[position] = 0.0
+        first.step()
+        self.assertEqual(max(first.position), 2)
+        self.assertEqual(first.turn_movement_cost, 2 * model.environment['movement_cost'])
+        # With enough food in view, the same agent does not explore.
+        first.position = (0, 0)
+        model.food[(0, 1)] = 3.0
+        first.step()
+        self.assertEqual(first.position, (0, 1))
+
     def test_invalid_resource_transfer_is_reported(self):
         with patch.object(config, 'CHILD_STARTING_RESOURCES', 5):
             with self.assertRaises(ValueError):

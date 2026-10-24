@@ -77,14 +77,18 @@ def agent_details(agent):
 def build_state(since, selected_id):
     food = []
     capacity = []
+    farms = []  # "A", "B", or None (no farm) for every cell.
     for row in range(model.grid_size):
         food_row = []
         capacity_row = []
+        farm_row = []
         for column in range(model.grid_size):
             food_row.append(round(model.food[(row, column)], 2))
             capacity_row.append(model.capacity[(row, column)])
+            farm_row.append(model.farms.get((row, column)))
         food.append(food_row)
         capacity.append(capacity_row)
+        farms.append(farm_row)
 
     agents = []
     for agent in model.agents:
@@ -109,8 +113,7 @@ def build_state(since, selected_id):
     parameters = {
         "Grid size": f"{model.grid_size} × {model.grid_size}",
         "Starting resources": environment["starting_resources"],
-        "Food per patch": environment["food_per_patch"],
-        "Regeneration per timestep": environment["regeneration"],
+        "Wild patch capacity": environment["food_per_patch"],
         "Survival cost": environment["survival_cost"],
         "Movement cost": environment["movement_cost"],
         "Maximum age": environment["maximum_age"],
@@ -121,10 +124,19 @@ def build_state(since, selected_id):
         "Reproduction cooldown": config.REPRODUCTION_COOLDOWN,
         "Mutation rate": config.MUTATION_RATE,
         "Mutation size (std)": config.MUTATION_STD,
+        "Mating radius": config.MATING_RADIUS,
+        "Fight cost": config.FIGHT_COST,
+        "Share of resources taken in a robbery": config.STEAL_FRACTION,
+        "Wild regrowth per timestep": environment["regeneration"],
+        "Farm growth per timestep": environment["farm_growth"],
+        "Farm capacity": config.FARM_CAPACITY,
+        "Cost to plant a farm": config.PLANT_COST,
+        "Resources needed to plant": config.PLANT_MIN_RESOURCES,
+        "Farm abandoned after (timesteps unworked)": config.FARM_ABANDON_STEPS,
         "Random seed": config.SEED,
     }
     if model.world_name != "SMALL":
-        parameters["Patch density"] = environment["patch_density"]
+        parameters["Fertile land (share of cells)"] = environment["patch_density"]
         parameters["Starting agents per population"] = model.world["agents_per_population"]
 
     return {
@@ -138,6 +150,7 @@ def build_state(since, selected_id):
         "grid_size": model.grid_size,
         "food": food,
         "capacity": capacity,
+        "farms": farms,
         "agents": agents,
         "stats": {
             "population_a": model.population_a,
@@ -154,6 +167,12 @@ def build_state(since, selected_id):
             "average_resources": model.average_resources,
             "minimum_reproduction_age": config.MIN_REPRODUCTION_AGE,
             "reproduction_threshold": config.REPRODUCTION_THRESHOLD,
+            "cumulative_actions": model.cumulative_actions,
+            "fights_this_step": model.fights_this_step,
+            "cumulative_fights": model.cumulative_fights,
+            "cumulative_stolen": model.cumulative_stolen,
+            "farms_a": model.A_farms,
+            "farms_b": model.B_farms,
         },
         "history": history,
         "events": events,

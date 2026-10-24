@@ -68,8 +68,12 @@
                     <span><i class="swatch-dot faded"></i>Faded = low resources</span>
                     <span><i class="swatch-dot newborn"></i>Newborn</span>
                     <span><i class="swatch-death">×</i>Died this step</span>
-                    <span><i class="swatch-food"></i>Food patch (darker = more food)</span>
-                    <span><i class="swatch-ground"></i>No food grows</span>
+                    <span><i class="swatch-contest compete"></i>Robbery or farm raid this step</span>
+                    <span><i class="swatch-contest fight"></i>Fight this step</span>
+                    <span><i class="swatch-farm A"></i>Farm of A</span>
+                    <span><i class="swatch-farm B"></i>Farm of B</span>
+                    <span><i class="swatch-food"></i>Wild food (darker = more food)</span>
+                    <span><i class="swatch-ground"></i>Barren land</span>
                 </div>
                 <p class="hint">Click a cell to inspect an agent. Click again to cycle through agents sharing a cell.</p>
             </section>
@@ -78,12 +82,18 @@
                 <h2>Trends over time</h2>
                 <div class="charts">
                     <figure><figcaption>Population size</figcaption><canvas id="chart-population"></canvas></figure>
+                    <figure><figcaption>Farms</figcaption><canvas id="chart-farms"></canvas></figure>
+                    <figure><figcaption>Resources stolen from the other population (last 25 steps)</figcaption><canvas id="chart-stolen"></canvas></figure>
                     <figure><figcaption>Food on grid</figcaption><canvas id="chart-food"></canvas></figure>
                     <figure><figcaption>Average exploration</figcaption><canvas id="chart-exploratory_tendency"></canvas></figure>
                     <figure><figcaption>Average risk tolerance</figcaption><canvas id="chart-risk_tolerance"></canvas></figure>
                     <figure><figcaption>Average sociability</figcaption><canvas id="chart-sociability"></canvas></figure>
                     <figure><figcaption>Average cooperation</figcaption><canvas id="chart-cooperative_tendency"></canvas></figure>
+                    <figure><figcaption>Behaviour: left rivals alone when meeting (%, last 25 steps)</figcaption><canvas id="chart-cooperate-rate"></canvas></figure>
+                    <figure><figcaption>Behaviour: kept distance from rivals in view (%, last 25 steps)</figcaption><canvas id="chart-avoid-rate"></canvas></figure>
                 </div>
+                <p class="hint">Genome charts show what agents are born with. Behaviour charts show what they actually did,
+                    which also depends on their resources and who they meet.</p>
                 <div class="legend">
                     <span><i class="swatch-line A"></i>Population A</span>
                     <span><i class="swatch-line B"></i>Population B</span>
@@ -102,6 +112,11 @@
             </section>
 
             <section class="card">
+                <h2>Behaviour towards rivals (last 50 steps)</h2>
+                <div id="behaviour"></div>
+            </section>
+
+            <section class="card">
                 <h2>Inspector</h2>
                 <div id="inspector" class="inspector">
                     <p class="hint">Click an agent on the grid.</p>
@@ -114,7 +129,9 @@
                     <div class="filters">
                         <label><input type="checkbox" data-kind="birth" checked> Births</label>
                         <label><input type="checkbox" data-kind="death" checked> Deaths</label>
-                        <label><input type="checkbox" data-kind="encounter" checked> Encounters</label>
+                        <label><input type="checkbox" data-kind="compete" checked> Robberies</label>
+                        <label><input type="checkbox" data-kind="theft" checked> Raids</label>
+                        <label><input type="checkbox" data-kind="farm"> Farms</label>
                     </div>
                 </div>
                 <ol id="events" class="events" reversed></ol>

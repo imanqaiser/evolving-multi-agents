@@ -7,6 +7,10 @@
     --ground: #f3efe6;
     --death: #b3261e;
     --newborn: #e3a700;
+    --cooperate: #0f9488;
+    --compete: #d6336c;
+    --avoid: #8a94a6;
+    --ignore: #d5dae2;
     --page: #f5f6f8;
     --card: #ffffff;
     --text: #1f2328;
@@ -110,6 +114,12 @@ select { padding: 6px; border: 1px solid var(--line); border-radius: 6px; backgr
 .swatch-death { color: var(--death); font-style: normal; font-weight: 700; }
 .swatch-food { width: 22px; height: 11px; border-radius: 2px; background: linear-gradient(90deg, var(--food-empty), var(--food)); }
 .swatch-ground { width: 11px; height: 11px; border-radius: 2px; background: var(--ground); border: 1px solid var(--line); }
+.swatch-contest { width: 11px; height: 11px; border-radius: 2px; border: 2px solid; }
+.swatch-contest.compete { border-color: var(--compete); }
+.swatch-contest.fight { border-color: var(--death); }
+.swatch-farm { width: 11px; height: 11px; border-radius: 2px; border: 2px solid; }
+.swatch-farm.A { background: #c9d9f2; border-color: #7f9fd6; }
+.swatch-farm.B { background: #f5d6c0; border-color: #df9f74; }
 .swatch-line { width: 16px; height: 3px; border-radius: 2px; }
 .swatch-line.A { background: var(--population-a); }
 .swatch-line.B { background: var(--population-b); }
@@ -151,7 +161,8 @@ select { padding: 6px; border: 1px solid var(--line); border-radius: 6px; backgr
 
 /* Event log. */
 .events-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.filters { display: flex; gap: 10px; font-size: 12px; color: var(--muted); }
+.filters { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--muted); }
+.filters label { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 .events { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; }
 .events li { display: flex; gap: 8px; padding: 5px 4px; border-bottom: 1px solid var(--page); font-size: 12px; cursor: pointer; }
 .events li:hover { background: var(--page); }
@@ -159,7 +170,21 @@ select { padding: 6px; border: 1px solid var(--line); border-radius: 6px; backgr
 .event-kind { flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; }
 .event-kind.birth { background: var(--newborn); }
 .event-kind.death { background: var(--death); }
-.event-kind.encounter { background: #8a63d2; }
+.event-kind.compete { background: var(--compete); }
+.event-kind.theft { background: #8a63d2; }
+.event-kind.farm { background: var(--food); }
+.split .raid { background: #8a63d2; }
+.split .respect { background: var(--ignore); color: var(--text); }
+
+/* Behaviour panel: one bar split into the shares of two choices. */
+.split-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 8px; margin: 5px 0; }
+.split { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--page); font-size: 10px; color: white; }
+.split span { display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; }
+.split .avoid { background: var(--avoid); }
+.split .ignore { background: var(--ignore); color: var(--text); }
+.split .cooperate { background: var(--cooperate); }
+.split .compete { background: var(--compete); }
+.trait-hint { color: var(--muted); font-weight: 400; font-size: 11px; }
 .event-kind.extinction { background: var(--text); }
 .events li.extinction { font-weight: 700; }
 
