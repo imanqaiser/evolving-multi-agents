@@ -3,168 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Four agents, nine cells — V0.2</title>
-    <!-- CSS controls appearance. The simulation rules are all in model.py. -->
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 30px auto; padding: 0 16px; color: #222; }
-        button { padding: 10px 18px; cursor: pointer; }
-        button:disabled { cursor: default; }
-        form { display: inline-block; margin-right: 10px; }
-        .layout { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
-        .details { flex: 1; min-width: 300px; overflow-x: auto; }
-        table { border-collapse: collapse; margin: 16px 0; }
-        th, td { border: 1px solid #aaa; padding: 10px; text-align: left; }
-        .grid { width: 330px; table-layout: fixed; }
-        .grid td { height: 100px; text-align: center; vertical-align: top; padding: 6px; }
-        .food { background: #e2f3df; }
-        .A { color: #1556b8; font-weight: bold; }
-        .B { color: #a74300; font-weight: bold; }
-        .position, .note { color: #555; font-size: 14px; }
-        .position { margin-bottom: 10px; }
-        .agent { display: block; margin-top: 5px; }
-        li { margin-bottom: 14px; line-height: 1.5; }
-    </style>
+    <title>Evolving Societies</title>
+    <!-- Appearance is in static/dashboard.css. Drawing and buttons are in static/dashboard.js.
+         The simulation rules are all in model.py. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body>
-    <h1>Four agents, nine cells — V0.2</h1>
-    <p>One click = one timestep. Each living agent takes one turn in a shuffled order.</p>
-
-    <!-- Submitting a form calls the matching POST route in app.py. -->
-    <form action="/step" method="post">
-        <button type="submit" {% if not model.running %}disabled{% endif %}>Next timestep</button>
-    </form>
-    <form action="/reset" method="post">
-        <label for="environment">Environment:</label>
-        <select id="environment" name="environment">
-            {% for name in config.ENVIRONMENTS %}
-            <option value="{{ name }}" {% if name == model.environment_name %}selected{% endif %}>{{ name }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Reset with selected preset</button>
-    </form>
-    <p class="note">Choosing a preset takes effect when you press Reset. Reset repeats the same random seed.</p>
-
-    <p id="summary">
-        <strong>{{ model.environment_name }} · Timestep {{ model.steps }}</strong> ·
-        A alive: {{ model.population_a }} · B alive: {{ model.population_b }} ·
-        Food on grid: {{ '%.2f' | format(model.environmental_resources) }}
-    </p>
-    <p id="encounter-counts">
-        Cross-population encounters this timestep: <strong>{{ model.encounters_per_timestep }}</strong> ·
-        Cumulative cross-population encounters: <strong>{{ model.cumulative_encounters }}</strong>
-    </p>
-    <p>Total deaths: {{ model.starvation_deaths }} from starvation · {{ model.old_age_deaths }} from old age</p>
-
-    <div class="layout">
+    <header class="topbar">
         <div>
-            <!-- Flask's template loops create one HTML row per grid row. -->
-            <table class="grid" aria-label="Simulation grid">
-                {% for row in grid %}
-                <tr>
-                    {% for cell in row %}
-                    <td {% if cell.food > 0 %}class="food"{% endif %}>
-                        <div class="position">{{ cell.position }}</div>
-                        Food: {{ '%.2f' | format(cell.food) }}
-                        <div class="note">{% if cell.capacity > 0 %}Patch: max {{ cell.capacity }}{% else %}No growth{% endif %}</div>
-                        <!-- List every occupant so agents cannot hide each other. -->
-                        {% for agent in cell.agents %}
-                        <span class="agent {{ agent.population }}">{{ agent.name }}</span>
-                        {% endfor %}
-                    </td>
+            <h1>Evolving Societies</h1>
+            <div class="subtitle">Two populations · inherited genomes · limited food</div>
+        </div>
+        <div class="clock">
+            <span class="clock-label">Timestep</span>
+            <span id="timestep" class="clock-value">0</span>
+            <span id="run-label" class="run-label"></span>
+        </div>
+    </header>
+
+    <!-- The buttons call functions in dashboard.js, which call the /api routes in app.py. -->
+    <section class="controls" aria-label="Simulation controls">
+        <div class="control-group">
+            <button id="run-button" class="primary" title="Space bar">▶ Run</button>
+            <button id="step-button" title="S key">Step</button>
+            <label class="speed">Speed
+                <input id="speed" type="range" min="0" max="6" value="2">
+                <span id="speed-label"></span>
+            </label>
+        </div>
+        <div class="control-group">
+            <label>World
+                <select id="world">
+                    {% for name in config.WORLDS %}
+                    <option value="{{ name }}" {% if name == model.world_name %}selected{% endif %}>{{ name }} ({{ config.WORLDS[name].grid_size }}×{{ config.WORLDS[name].grid_size }})</option>
                     {% endfor %}
-                </tr>
-                {% endfor %}
-            </table>
-            <p class="note">Positions: (row, column), starting at (0, 0).<br>
-                <span class="A">Blue = A.</span> <span class="B">Orange = B.</span> Green = food.</p>
+                </select>
+            </label>
+            <label>Environment
+                <select id="environment">
+                    {% for name in config.ENVIRONMENTS %}
+                    <option value="{{ name }}" {% if name == model.environment_name %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button id="reset-button">Reset</button>
+            <span id="reset-hint" class="hint"></span>
+        </div>
+        <a class="debug-link" href="/debug">Debug view ↗</a>
+    </section>
+
+    <div id="ended-banner" class="banner" hidden>All agents have died. Press Reset to start again.</div>
+    <div id="error-banner" class="banner error" hidden></div>
+
+    <main class="layout">
+        <div class="column-main">
+            <section class="card world-card">
+                <div class="canvas-holder">
+                    <canvas id="grid" aria-label="Simulation grid"></canvas>
+                    <div id="tooltip" class="tooltip" hidden></div>
+                </div>
+                <div class="legend">
+                    <span><i class="swatch-dot A"></i>Population A</span>
+                    <span><i class="swatch-dot B"></i>Population B</span>
+                    <span><i class="swatch-dot faded"></i>Faded = low resources</span>
+                    <span><i class="swatch-dot newborn"></i>Newborn</span>
+                    <span><i class="swatch-death">×</i>Died this step</span>
+                    <span><i class="swatch-food"></i>Food patch (darker = more food)</span>
+                    <span><i class="swatch-ground"></i>No food grows</span>
+                </div>
+                <p class="hint">Click a cell to inspect an agent. Click again to cycle through agents sharing a cell.</p>
+            </section>
+
+            <section class="card">
+                <h2>Trends over time</h2>
+                <div class="charts">
+                    <figure><figcaption>Population size</figcaption><canvas id="chart-population"></canvas></figure>
+                    <figure><figcaption>Food on grid</figcaption><canvas id="chart-food"></canvas></figure>
+                    <figure><figcaption>Average exploration</figcaption><canvas id="chart-exploratory_tendency"></canvas></figure>
+                    <figure><figcaption>Average risk tolerance</figcaption><canvas id="chart-risk_tolerance"></canvas></figure>
+                    <figure><figcaption>Average sociability</figcaption><canvas id="chart-sociability"></canvas></figure>
+                    <figure><figcaption>Average cooperation</figcaption><canvas id="chart-cooperative_tendency"></canvas></figure>
+                </div>
+                <div class="legend">
+                    <span><i class="swatch-line A"></i>Population A</span>
+                    <span><i class="swatch-line B"></i>Population B</span>
+                </div>
+            </section>
         </div>
 
-        <div class="details">
-            <h2>All four agents</h2>
-            <table id="agents">
-                <thead>
-                    <tr><th>Agent</th><th>Status</th><th>Position</th><th>Resources</th><th>Age</th><th>Exploration</th></tr>
-                </thead>
-                <tbody>
-                    {% for agent in model.all_agents %}
-                    <tr>
-                        <td class="{{ agent.population }}">{{ agent.name }}</td>
-                        <td>{{ agent.status }}</td>
-                        <td>{{ agent.position }}</td>
-                        <td>{{ '%.2f' | format(agent.resources) }}</td>
-                        <td>{{ agent.age }}</td>
-                        <td>{{ agent.genome.exploratory_tendency }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <p class="note">Dead agents stay in this table at their last position. Only living agents appear on the grid.</p>
-            <h2>What happened this timestep?</h2>
-            <ol id="actions">
-                {% for message in model.messages %}
-                <li>{{ message }}</li>
-                {% endfor %}
-            </ol>
+        <div class="column-side">
+            <section class="card">
+                <div id="stats" class="stats"></div>
+            </section>
+
+            <section class="card">
+                <h2>Average genome now</h2>
+                <div id="traits"></div>
+            </section>
+
+            <section class="card">
+                <h2>Inspector</h2>
+                <div id="inspector" class="inspector">
+                    <p class="hint">Click an agent on the grid.</p>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="events-header">
+                    <h2>Event log</h2>
+                    <div class="filters">
+                        <label><input type="checkbox" data-kind="birth" checked> Births</label>
+                        <label><input type="checkbox" data-kind="death" checked> Deaths</label>
+                        <label><input type="checkbox" data-kind="encounter" checked> Encounters</label>
+                    </div>
+                </div>
+                <ol id="events" class="events" reversed></ol>
+            </section>
+
+            <section class="card">
+                <details>
+                    <summary>Parameters of this run</summary>
+                    <table id="parameters" class="parameters"></table>
+                    <p class="hint">Edit these in config.py, then press Reset.</p>
+                </details>
+            </section>
         </div>
-    </div>
+    </main>
 
-    <h2>Encounter snapshots this timestep</h2>
-    <p class="note">Checked after each turn, after costs and death checks. Each living cross-population pair is
-        recorded once per timestep, at its first detection. These snapshots may differ from the final grid above.</p>
-    {% if model.encounters_this_step %}
-    <div style="overflow-x: auto;">
-        <table id="encounters">
-            <tr><th>Timestep</th><th>First agent (ID, population)</th><th>Position</th><th>Resources</th>
-                <th>Second agent (ID, population)</th><th>Position</th><th>Resources</th><th>Distance</th></tr>
-            {% for encounter in model.encounters_this_step %}
-            <tr>
-                <td>{{ encounter.timestep }}</td>
-                <td>{{ encounter.agent_1_name }} ({{ encounter.agent_1_id }}, {{ encounter.population_1 }})</td>
-                <td>{{ encounter.position_1 }}</td><td>{{ '%.2f' | format(encounter.resources_1) }}</td>
-                <td>{{ encounter.agent_2_name }} ({{ encounter.agent_2_id }}, {{ encounter.population_2 }})</td>
-                <td>{{ encounter.position_2 }}</td><td>{{ '%.2f' | format(encounter.resources_2) }}</td>
-                <td>{{ encounter.distance }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-    {% else %}
-    <p>No cross-population encounters recorded this timestep.</p>
-    {% endif %}
-
-    {% if not model.running %}
-    <p><strong>All agents have died. Their final states remain above. Press Reset to start again.</strong></p>
-    {% endif %}
-
-    <h2>The rules</h2>
-    <p>Each agent sees its current cell and its eight neighbors. Usually it chooses the cell with
-        the most food; ties are random. It has a 30% × exploration chance of trying a random
-        neighboring cell instead. If it sees no food, it searches a neighboring cell.</p>
-    <p>The active preset starts each agent with {{ model.environment.starting_resources }} resources and has
-        {{ model.environment.patches | length }} patches, each starting with {{ model.environment.food_per_patch }} food.</p>
-    <p>Move at most one cell, collect all its food, pay {{ model.environment.movement_cost }} if moving,
-        pay {{ model.environment.survival_cost }} to survive, and age by one. After everyone's turn,
-        patches regrow by {{ model.environment.regeneration }} up to capacity.
-        Death happens at zero resources or age {{ model.environment.maximum_age }}.
-        If both happen on the same turn, the death is counted as starvation.</p>
-    <p>Agents can share a cell. Earlier arrivals take the available food first.
-        Encounters mean the same cell (distance 0) or adjacent cells, including diagonals (distance 1).
-        They have no consequences. There is no fighting, sharing, or reproduction yet. Both populations follow the same rules.</p>
-
-    <details>
-        <summary>Stored genome traits</summary>
-        <p>Only exploration affects behavior. The other traits are stored for later.</p>
-        <table>
-            <tr><th>Agent</th><th>Exploration</th><th>Risk tolerance</th><th>Sociability</th><th>Cooperative tendency</th></tr>
-            {% for agent in model.all_agents %}
-            <tr>
-                <td>{{ agent.name }}</td>
-                {% for value in agent.genome.values() %}
-                <td>{{ '%.2f' | format(value) }}</td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </table>
-    </details>
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>

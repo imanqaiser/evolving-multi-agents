@@ -1,0 +1,175 @@
+/* Colors are named once here and reused below. */
+:root {
+    --population-a: #1556b8;
+    --population-b: #c2560c;
+    --food: #3d8b3d;
+    --food-empty: #e1ecd8;
+    --ground: #f3efe6;
+    --death: #b3261e;
+    --newborn: #e3a700;
+    --page: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2328;
+    --muted: #667080;
+    --line: #e2e5ea;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+}
+h1 { margin: 0; font-size: 20px; }
+h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+button, select, input { font: inherit; }
+button {
+    padding: 7px 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--card);
+    cursor: pointer;
+}
+button:hover { border-color: #b8bec8; }
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary { background: var(--text); color: white; border-color: var(--text); min-width: 90px; }
+select { padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
+.hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+
+/* Top bar with the title and the big timestep counter. */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+}
+.subtitle { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.clock { display: flex; align-items: baseline; gap: 10px; }
+.clock-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+.clock-value { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.run-label { padding: 3px 8px; border-radius: 10px; background: var(--page); color: var(--muted); font-size: 12px; }
+
+/* Control bar under the top bar. */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 28px;
+    padding: 10px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+}
+.control-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.control-group label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.speed span { min-width: 64px; color: var(--text); font-variant-numeric: tabular-nums; }
+.debug-link { margin-left: auto; color: var(--muted); }
+
+.banner { margin: 12px 20px 0; padding: 10px 14px; border-radius: 6px; background: #fff4d6; }
+.banner.error { background: #fde3e1; }
+
+/* Two columns: the world on the left, information panels on the right. */
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 16px;
+    padding: 16px 20px 30px;
+    align-items: start;
+}
+.column-main, .column-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 1050px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+}
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+
+/* The grid canvas stays square and as large as the column allows. */
+.canvas-holder { position: relative; width: 100%; max-width: 720px; margin: 0 auto; }
+#grid { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 6px; cursor: pointer; }
+.tooltip {
+    position: absolute;
+    pointer-events: none;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(31, 35, 40, 0.92);
+    color: white;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; flex: none; }
+.swatch-dot { width: 11px; height: 11px; border-radius: 50%; }
+.swatch-dot.A { background: var(--population-a); }
+.swatch-dot.B { background: var(--population-b); }
+.swatch-dot.faded { background: var(--population-a); opacity: 0.4; }
+.swatch-dot.newborn { background: var(--population-a); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--newborn); }
+.swatch-death { color: var(--death); font-style: normal; font-weight: 700; }
+.swatch-food { width: 22px; height: 11px; border-radius: 2px; background: linear-gradient(90deg, var(--food-empty), var(--food)); }
+.swatch-ground { width: 11px; height: 11px; border-radius: 2px; background: var(--ground); border: 1px solid var(--line); }
+.swatch-line { width: 16px; height: 3px; border-radius: 2px; }
+.swatch-line.A { background: var(--population-a); }
+.swatch-line.B { background: var(--population-b); }
+
+/* Statistic tiles. */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 10px; }
+.stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.stat-detail { color: var(--muted); font-size: 11px; }
+.stat-value.A { color: var(--population-a); }
+.stat-value.B { color: var(--population-b); }
+
+/* Horizontal bars for genome values between 0 and 1. */
+.trait-row { display: grid; grid-template-columns: 96px 1fr 40px; align-items: center; gap: 8px; margin: 5px 0; }
+.trait-name { color: var(--muted); font-size: 12px; }
+.trait-value { text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
+.bar { position: relative; height: 8px; border-radius: 4px; background: var(--page); }
+.bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.bar-fill.A { background: var(--population-a); }
+.bar-fill.B { background: var(--population-b); }
+.bar-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: 0.5; }
+.trait-group { margin-bottom: 8px; }
+.trait-group-title { font-size: 12px; font-weight: 600; margin-top: 6px; }
+
+/* Inspector. */
+.inspector-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.inspector-title strong { font-size: 18px; }
+.badge { padding: 2px 7px; border-radius: 10px; font-size: 11px; color: white; }
+.badge.A { background: var(--population-a); }
+.badge.B { background: var(--population-b); }
+.badge.dead { background: var(--muted); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0 0 10px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.last-action { background: var(--page); border-radius: 6px; padding: 8px; font-size: 12px; line-height: 1.45; margin-top: 8px; }
+.link { color: inherit; text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; }
+.cellmates { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.cellmates button { margin: 2px 4px 0 0; padding: 2px 7px; font-size: 12px; }
+
+/* Event log. */
+.events-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.filters { display: flex; gap: 10px; font-size: 12px; color: var(--muted); }
+.events { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; }
+.events li { display: flex; gap: 8px; padding: 5px 4px; border-bottom: 1px solid var(--page); font-size: 12px; cursor: pointer; }
+.events li:hover { background: var(--page); }
+.event-time { flex: none; width: 44px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.event-kind { flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; }
+.event-kind.birth { background: var(--newborn); }
+.event-kind.death { background: var(--death); }
+.event-kind.encounter { background: #8a63d2; }
+.event-kind.extinction { background: var(--text); }
+.events li.extinction { font-weight: 700; }
+
+/* Trend charts. */
+.charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.charts figure { margin: 0; }
+.charts figcaption { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.charts canvas { display: block; width: 100%; height: 120px; }
+
+.parameters { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 12px; }
+.parameters td { padding: 3px 0; border-bottom: 1px solid var(--page); }
+.parameters td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+summary { cursor: pointer; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
