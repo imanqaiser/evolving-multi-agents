@@ -182,7 +182,7 @@
         may reproduce, unworked farms are abandoned, and food regrows.</p>
     <p>Moving: each agent sees its current cell and its eight neighbors. On its own population's farm, an
         agent that is still saving up (fewer than {{ config.REPRODUCTION_THRESHOLD }} resources) stays to tend it
-        with probability 1 − risk tolerance. Otherwise: if a rival is in view, it ignores rivals with probability =
+        with probability = farming tendency. Otherwise: if a rival is in view, it ignores rivals with probability =
         sociability, or else keeps out of every cell on or next to a rival. If a rival farm with food is in view, it is
         willing to raid it with probability 1 − cooperative tendency, or else leaves rival farms alone. It then
         chooses the cell with the most food; ties are random. If even that is less than survival + movement cost,
@@ -195,7 +195,7 @@
         robs the other; both fighting on each pay {{ config.FIGHT_COST }}, and the winner (richer fighters win more often)
         robs the loser.</p>
     <p>Farms: only fertile land (wild patches) can be farmed. At the end of its turn, an agent with at least
-        {{ config.PLANT_MIN_RESOURCES }} resources plants a farm with probability 1 − risk tolerance, paying
+        {{ config.PLANT_MIN_RESOURCES }} resources plants a farm with probability = farming tendency, paying
         {{ config.PLANT_COST }}: on its own cell, or, when working its population's farm, on a fertile neighboring cell.
         Farms hold up to {{ config.FARM_CAPACITY }} food and grow {{ model.environment.farm_growth }} per timestep;
         anyone in the owning population may eat from them. Eating from the other population's farm is theft.

@@ -42,9 +42,19 @@
             <label>Environment
                 <select id="environment">
                     {% for name in config.ENVIRONMENTS %}
-                    <option value="{{ name }}" {% if name == model.environment_name %}selected{% endif %}>{{ name }}</option>
+                    <option value="{{ name }}" {% if name == model.environment_name %}selected{% endif %}>{{ environment_labels[name] }}</option>
                     {% endfor %}
                 </select>
+            </label>
+            <label>Starting agents
+                <select id="start">
+                    {% for name, label in start_options.items() %}
+                    <option value="{{ name }}" {% if name == start_name %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Seed
+                <input id="seed" type="number" min="0" step="1" value="{{ model.seed }}">
             </label>
             <button id="reset-button">Reset</button>
             <span id="reset-hint" class="hint"></span>
@@ -89,6 +99,8 @@
                     <figure><figcaption>Average risk tolerance</figcaption><canvas id="chart-risk_tolerance"></canvas></figure>
                     <figure><figcaption>Average sociability</figcaption><canvas id="chart-sociability"></canvas></figure>
                     <figure><figcaption>Average cooperation</figcaption><canvas id="chart-cooperative_tendency"></canvas></figure>
+                    <figure><figcaption>Average farming</figcaption><canvas id="chart-farming_tendency"></canvas></figure>
+                    <figure><figcaption>Share of all agents that belong to population A (%)</figcaption><canvas id="chart-share"></canvas></figure>
                     <figure><figcaption>Behaviour: left rivals alone when meeting (%, last 25 steps)</figcaption><canvas id="chart-cooperate-rate"></canvas></figure>
                     <figure><figcaption>Behaviour: kept distance from rivals in view (%, last 25 steps)</figcaption><canvas id="chart-avoid-rate"></canvas></figure>
                 </div>

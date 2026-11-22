@@ -1,0 +1,73 @@
+== e1_drift
+E1: 60 runs
+  10/60 runs done (25 s)
+  20/60 runs done (41 s)
+  30/60 runs done (55 s)
+  40/60 runs done (70 s)
+  50/60 runs done (90 s)
+  60/60 runs done (102 s)
+Saved /Users/tuu96099/Downloads/courses./artificial intelligence./project./Evolving Multi Agent System/results/e1_timeseries.csv.gz
+== e2_gradient
+E2: 150 runs
+  10/150 runs done (8 s)
+  20/150 runs done (13 s)
+  30/150 runs done (19 s)
+  40/150 runs done (46 s)
+  50/150 runs done (63 s)
+  60/150 runs done (81 s)
+  70/150 runs done (97 s)
+  80/150 runs done (121 s)
+  90/150 runs done (133 s)
+  100/150 runs done (163 s)
+  110/150 runs done (194 s)
+  120/150 runs done (215 s)
+  130/150 runs done (277 s)
+  140/150 runs done (328 s)
+  150/150 runs done (354 s)
+Saved /Users/tuu96099/Downloads/courses./artificial intelligence./project./Evolving Multi Agent System/results/e2_timeseries.csv.gz
+Saved /Users/tuu96099/Downloads/courses./artificial intelligence./project./Evolving Multi Agent System/results/e2_lifetimes.csv.gz
+Saved /Users/tuu96099/Downloads/courses./artificial intelligence./project./Evolving Multi Agent System/results/e2_gene_pools.json.gz
+Saved gene_pools/scarcity_veterans.json
+Saved gene_pools/plenty_veterans.json
+== e5_selection
+Saved /Users/tuu96099/Downloads/courses./artificial intelligence./project./Evolving Multi Agent System/results/e5_selection.csv
+Saved /Users/tuu96099/Downloads/courses./artificial intelligence./project./Evolving Multi Agent System/results/e5_offspring_by_gene.csv
+== e3_shared_world
+E3: 300 runs
+  10/300 runs done (9 s)
+  20/300 runs done (15 s)
+  30/300 runs done (19 s)
+  40/300 runs done (24 s)
+  50/300 runs done (29 s)
+  60/300 runs done (33 s)
+  70/300 runs done (63 s)
+  80/300 runs done (79 s)
+  90/300 runs done (97 s)
+  100/300 runs done (116 s)
+  110/300 runs done (143 s)
+  120/300 runs done (161 s)
+  130/300 runs done (176 s)
+  140/300 runs done (193 s)
+  150/300 runs done (209 s)
+  160/300 runs done (225 s)
+  170/300 runs done (244 s)
+  180/300 runs done (258 s)
+  190/300 runs done (289 s)
+  200/300 runs done (315 s)
+  210/300 runs done (343 s)
+  220/300 runs done (370 s)
+  230/300 runs done (403 s)
+  240/300 runs done (428 s)
+  250/300 runs done (483 s)
+  260/300 runs done (533 s)
+  270/300 runs done (574 s)
+  280/300 runs done (621 s)
+  290/300 runs done (679 s)
+  300/300 runs done (713 s)
+Saved /Users/tuu96099/Downloads/courses./artificial intelligence./project./Evolving Multi Agent System/results/e3_timeseries.csv.gz
+== e4_shock
+E4: 120 runs
+  10/120 runs done (83 s)
+  20/120 runs done (135 s)
+  30/120 runs done (178 s)
+  40/120 runs done (222 s)

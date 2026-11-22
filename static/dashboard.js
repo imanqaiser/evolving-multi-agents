@@ -9,9 +9,10 @@ const GROUND = "#f3efe6";            // Cells where no food grows.
 // Gene name, label, and what it controls (the same rules as in model.py).
 const TRAITS = [
     ["exploratory_tendency", "Exploration", "jump two cells when food nearby is poor"],
-    ["risk_tolerance", "Risk tolerance", "fight on and roam; low = tend and plant farms"],
+    ["risk_tolerance", "Risk tolerance", "fight on instead of backing down"],
     ["sociability", "Sociability", "ignore rivals instead of keeping a distance"],
     ["cooperative_tendency", "Cooperation", "leave rivals alone and respect their farms"],
+    ["farming_tendency", "Farming", "tend its population's farm and plant new ones"],
 ];
 const FARM_EMPTY = { A: [214, 226, 245], B: [248, 226, 210] }; // Farm tint when empty.
 const FARM_FULL = { A: [127, 159, 214], B: [223, 159, 116] };  // Farm tint when full.
@@ -81,6 +82,8 @@ async function resetSimulation() {
     const newState = await callServer("/api/reset", {
         world: byId("world").value,
         environment: byId("environment").value,
+        start: byId("start").value,
+        seed: Number(byId("seed").value),
     });
     forgetRun();
     receive(newState);
@@ -175,9 +178,11 @@ function updateButtons() {
 
 function render() {
     byId("timestep").textContent = state.timestep;
-    byId("run-label").textContent = `${state.world} · ${state.environment}`;
+    byId("run-label").textContent = `${state.world} · ${state.environment} · seed ${state.seed}` +
+        (state.start === "random" ? "" : ` · ${state.start_label}`);
     byId("ended-banner").hidden = state.running;
-    const chosen = byId("world").value !== state.world || byId("environment").value !== state.environment;
+    const chosen = byId("world").value !== state.world || byId("environment").value !== state.environment
+        || byId("start").value !== state.start || Number(byId("seed").value) !== state.seed;
     byId("reset-hint").textContent = chosen ? "Press Reset to apply" : "";
     updateButtons();
     renderStats();
@@ -683,6 +688,13 @@ function drawCharts() {
             { values: whileAlive("B", `Population B average ${trait}`), color: COLORS.B },
         ], 1);
     }
+    // Share of all living agents that belong to population A.
+    const sizeA = history["Population A"] || [];
+    const sizeB = history["Population B"] || [];
+    drawChart(byId("chart-share"), [{
+        values: sizeA.map((count, index) => (count + sizeB[index] > 0 ? (100 * count) / (count + sizeB[index]) : null)),
+        color: COLORS.A,
+    }], 100);
     for (const [chart, first, second] of [["cooperate-rate", "cooperate", "compete"], ["avoid-rate", "avoid", "ignore"]]) {
         drawChart(byId(`chart-${chart}`), [
             { values: rateOverTime(`Population A ${first}`, `Population A ${second}`, 25), color: COLORS.A },
@@ -765,6 +777,8 @@ byId("reset-button").addEventListener("click", () => resetSimulation().catch(sho
 byId("speed").addEventListener("input", updateButtons);
 byId("world").addEventListener("change", render);
 byId("environment").addEventListener("change", render);
+byId("start").addEventListener("change", render);
+byId("seed").addEventListener("input", render);
 byId("grid").addEventListener("click", onGridClick);
 byId("grid").addEventListener("mousemove", onGridHover);
 byId("grid").addEventListener("mouseleave", () => { byId("tooltip").hidden = true; });

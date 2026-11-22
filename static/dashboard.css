@@ -39,6 +39,7 @@ button {
 button:hover { border-color: #b8bec8; }
 button:disabled { opacity: 0.5; cursor: default; }
 button.primary { background: var(--text); color: white; border-color: var(--text); min-width: 90px; }
+#seed { width: 5.5em; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
 select { padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
 .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
 

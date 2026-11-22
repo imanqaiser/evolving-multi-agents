@@ -1,0 +1,6 @@
+gene,scarcest,most_plentiful,difference,difference_low,difference_high,cohens_d,p_value,trend_spearman,trend_p
+exploratory_tendency,0.5898,0.4994,-0.09043,-0.1592,-0.02164,-0.6871,0.01135,-0.0405,0.6227
+risk_tolerance,0.5727,0.5284,-0.04426,-0.1046,0.01608,-0.3823,0.1462,-0.2439,0.002636
+sociability,0.4697,0.4785,0.008844,-0.06645,0.08414,0.06173,0.8125,-0.1382,0.0918
+cooperative_tendency,0.4879,0.4974,0.009587,-0.06474,0.08392,0.06744,0.7954,0.2053,0.01172
+farming_tendency,0.3763,0.6879,0.3116,0.2881,0.3352,6.91,4.942e-27,0.5214,7.884e-12

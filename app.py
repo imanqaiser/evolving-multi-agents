@@ -1,5 +1,8 @@
 # Flask serves the pages. Mesa handles the simulation in model.py.
 # Run this file with: python app.py
+import json
+import os
+
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 import config
@@ -10,17 +13,59 @@ app = Flask(__name__)
 # One simulation for this local demo. All browser tabs see this same world.
 model = SocietyModel()
 
+# The "Starting agents" menu. "random" gives every agent random genes
+# (generation 0). The other choices start a population from a saved gene pool:
+# genomes that already evolved for 2,000 timesteps in experiment E2, at the
+# most plentiful level ("plenty veterans") or the scarcest ("scarcity veterans").
+# Each entry: label, then which pool population A and population B start from.
+START_OPTIONS = {
+    "random": ("Random (generation 0)", None, None),
+    "plenty_vs_random": ("A evolved in plenty · B random", "plenty_veterans", None),
+    "scarcity_vs_random": ("A evolved in scarcity · B random", "scarcity_veterans", None),
+    "plenty_vs_scarcity": ("A evolved in plenty · B evolved in scarcity", "plenty_veterans", "scarcity_veterans"),
+}
+start_name = "random"
+
+# Menu text for the environments: the five abundance levels and the two aliases.
+ENVIRONMENT_LABELS = {}
+for name, environment in config.ENVIRONMENTS.items():
+    text = name.replace("_", " ").capitalize()
+    ENVIRONMENT_LABELS[name] = f"{text} (level {environment['level']}, productivity ×{environment['multiplier']:g})"
+
+
+# Read a saved gene pool (a list of genomes) from the gene_pools folder.
+def load_pool(name):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gene_pools", f"{name}.json")
+    with open(path) as file:
+        return json.load(file)
+
 
 # Replace the old simulation with a fresh starting world.
 # Returns an error message for unknown names, or None if the reset worked.
-def reset_model(environment_name, world_name):
-    global model
+def reset_model(environment_name, world_name, seed=None, start=None):
+    global model, start_name
     if environment_name not in config.ENVIRONMENTS:
         return "Unknown environment preset."
     if world_name not in config.WORLDS:
         return "Unknown world size."
-    model = SocietyModel(environment_name, world_name)
-    print(f"Simulation reset to timestep 0: {world_name} {environment_name}.", flush=True)
+    start = start or start_name
+    if start not in START_OPTIONS:
+        return "Unknown starting population."
+    try:
+        seed = model.seed if seed is None else int(seed)
+    except (TypeError, ValueError):
+        return "The seed must be a whole number."
+    gene_pools = {}
+    for population, pool_name in zip(["A", "B"], START_OPTIONS[start][1:]):
+        if pool_name:
+            try:
+                gene_pools[population] = load_pool(pool_name)
+            except FileNotFoundError:
+                return f"gene_pools/{pool_name}.json is missing. Run experiments/e2_gradient.py first."
+    model = SocietyModel(environment_name, world_name, seed=seed, gene_pools=gene_pools)
+    start_name = start
+    print(f"Simulation reset to timestep 0: {world_name} {environment_name}, seed {seed}, "
+          f"start {start}.", flush=True)
     return None
 
 
@@ -34,7 +79,9 @@ def reset_model(environment_name, world_name):
 # Opening http://127.0.0.1:5000/ calls this function.
 @app.route("/")
 def show_dashboard():
-    return render_template("index.html", model=model, config=config)
+    start_options = {name: option[0] for name, option in START_OPTIONS.items()}
+    return render_template("index.html", model=model, config=config, start_options=start_options,
+                           start_name=start_name, environment_labels=ENVIRONMENT_LABELS)
 
 
 # The small amount of information the grid needs to draw one agent.
@@ -133,7 +180,8 @@ def build_state(since, selected_id):
         "Cost to plant a farm": config.PLANT_COST,
         "Resources needed to plant": config.PLANT_MIN_RESOURCES,
         "Farm abandoned after (timesteps unworked)": config.FARM_ABANDON_STEPS,
-        "Random seed": config.SEED,
+        "Random seed": model.seed,
+        "Starting agents": START_OPTIONS[start_name][0],
     }
     if model.world_name != "SMALL":
         parameters["Fertile land (share of cells)"] = environment["patch_density"]
@@ -147,6 +195,9 @@ def build_state(since, selected_id):
         "running": model.running,
         "world": model.world_name,
         "environment": model.environment_name,
+        "seed": model.seed,
+        "start": start_name,
+        "start_label": START_OPTIONS[start_name][0],
         "grid_size": model.grid_size,
         "food": food,
         "capacity": capacity,
@@ -206,6 +257,8 @@ def reset_api():
     error = reset_model(
         data.get("environment", model.environment_name),
         data.get("world", model.world_name),
+        data.get("seed"),
+        data.get("start"),
     )
     if error:
         return error, 400

@@ -1,0 +1,6 @@
+measure,scarcest,most_plentiful,difference,cohens_d,p_value,trend_spearman,trend_p
+farms_per_agent,2.167,0.2275,-1.939,-27.35,4.13e-39,-0.9798,2.203e-105
+stolen_per_agent,0.2653,0.02685,-0.2385,-0.8685,0.001947,-0.6428,7.487e-19
+starvation_share,0.151,0.09249,-0.05855,-3.385,1.197e-14,-0.7969,3.279e-34
+starved_per_1000,3.263,1.897,-1.366,-3.396,1.626e-14,-0.8167,3.618e-37
+encounters_per_agent,0.132,0.03994,-0.09207,-0.5148,0.05123,-0.6324,3.992e-18

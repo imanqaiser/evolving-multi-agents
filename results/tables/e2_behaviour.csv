@@ -1,0 +1,6 @@
+level,multiplier,runs_with_extinction,median_encounters,runs_with_20_meetings,population_size,population_size_ci,starvation_share,starvation_share_ci,starved_per_1000,starved_per_1000_ci,cooperate_rate,cooperate_rate_ci,fights_per_encounter,fights_per_encounter_ci,raid_rate,raid_rate_ci,avoid_rate,avoid_rate_ci,farms_per_agent,farms_per_agent_ci,stolen_per_agent,stolen_per_agent_ci,encounters_per_agent,encounters_per_agent_ci
+1,0.6,3,40.5,19,92.33,12.05,0.151,0.008828,3.263,0.2066,0.4049,0.06251,0.0756,0.03285,0.5972,0.1038,0.4916,0.1046,2.167,0.03745,0.2653,0.1399,0.132,0.07548
+2,1,5,6960,30,493.7,9.077,0.2049,0.01345,4.631,0.3691,0.2458,0.03101,0.2067,0.0433,0.7641,0.03832,0.4425,0.04455,1.192,0.02251,2.892,0.4723,1.343,0.2501
+3,1.6,0,0,1,408.7,29.85,0.122,0.002575,2.538,0.05634,,,,,,,,,0.5947,0.002643,0.01211,0.02476,0.01287,0.02632
+4,2.5,0,0,1,675.8,44.55,0.1205,0.002067,2.497,0.04488,,,,,,,,,0.3663,0.001061,0.01175,0.02403,0.01852,0.03787
+5,4,0,0,2,1094,80.78,0.09249,0.002339,1.897,0.0493,,,,,,,,,0.2275,0.0006078,0.02685,0.03815,0.03994,0.05675

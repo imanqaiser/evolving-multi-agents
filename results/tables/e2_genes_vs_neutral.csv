@@ -1,0 +1,6 @@
+level,gene,selection,neutral,difference,difference_low,difference_high,cohens_d,p_value,n_selection,n_neutral
+3,exploratory_tendency,0.5445,0.5106,0.0339,-0.01063,0.07843,0.3936,0.1329,30,30
+3,risk_tolerance,0.5086,0.4989,0.009732,-0.03413,0.05359,0.1147,0.6586,30,30
+3,sociability,0.4904,0.5089,-0.01848,-0.05724,0.02028,-0.2465,0.3437,30,30
+3,cooperative_tendency,0.4991,0.5108,-0.01168,-0.05177,0.02841,-0.151,0.5612,30,30
+3,farming_tendency,0.6463,0.4976,0.1488,0.1199,0.1776,2.69,4.796e-13,30,30
