@@ -9,6 +9,9 @@ class SocietyAgent(mesa.Agent):
     # __init__ sets up an agent when we create it.
     def __init__(self, model, name, position, exploration=None, genome=None,
                  generation=0, parent_ids=None):
+        # genome=None gives a starting agent random genes. A starting agent can
+        # also be handed a genome from a saved gene pool. Children (parent_ids
+        # given) always receive the genome made by make_child_genome().
         # super() calls Mesa's setup code. Mesa assigns an ID and registers the agent.
         super().__init__(model)
         self.name = name
@@ -26,25 +29,44 @@ class SocietyAgent(mesa.Agent):
         # What happens during a turn is collected in turn_... values (see
         # start_turn) and applied to resources in finish_turn.
         self.start_turn()
-        # A genome is a dictionary of four tendencies between 0 and 1:
+        # Lifetime totals, written to model.lifetime_records when the agent dies.
+        self.birth_step = model.steps
+        self.total_food = 0.0    # Food eaten.
+        self.total_stolen = 0.0  # Taken from the other population (robberies and farm raids).
+        self.total_lost = 0.0    # Robbed from this agent.
+        self.offspring = 0       # Children produced: the agent's realized fitness.
+        # A genome is a dictionary of five tendencies between 0 and 1 (config.GENES):
         #   exploratory_tendency  chance of exploring when nearby food is poor (step)
+        #   risk_tolerance        chance of fighting on instead of backing down (confront)
         #   sociability           chance of ignoring rivals instead of avoiding them (step)
         #   cooperative_tendency  chance of leaving a rival alone instead of robbing it
         #                         (confront) and of respecting rival farms (step)
-        #   risk_tolerance        chance of fighting on instead of backing down (confront);
-        #                         cautious agents (low risk) tend and plant farms (step, farm)
+        #   farming_tendency      chance of staying to tend its population's farm (step)
+        #                         and of planting a new farm (farm)
         if genome is None:
             self.genome = {
                 "exploratory_tendency": exploration,
                 "risk_tolerance": self.random.random(),
                 "sociability": self.random.random(),
                 "cooperative_tendency": self.random.random(),
+                "farming_tendency": self.random.random(),
             }
         else:
-            # Children receive the inherited dictionary, not new random genes.
+            # Use the given dictionary, not new random genes.
             self.genome = genome.copy()
-            self.resources = config.CHILD_STARTING_RESOURCES
+        if parent_ids is not None:
+            self.resources = model.param("CHILD_STARTING_RESOURCES")
             self.last_action = f"Born at {position}; first normal turn is next timestep."
+        # self.traits is what the agent's decisions actually read. Normally it
+        # IS the genome. In the neutral control it is a separate random draw, so
+        # genes are inherited and mutated but never affect behaviour: any change
+        # in gene averages is then pure random drift, with no selection.
+        if model.neutral:
+            self.traits = {}
+            for trait in config.GENES:
+                self.traits[trait] = self.random.random()
+        else:
+            self.traits = self.genome
 
     # model.cell_agents is a lookup table: position → list of living agents there.
     # It lets an agent check only the nine nearby cells instead of every agent.
@@ -73,8 +95,8 @@ class SocietyAgent(mesa.Agent):
     def can_reproduce(self):
         return (
             self.alive
-            and self.age >= config.MIN_REPRODUCTION_AGE
-            and self.resources >= config.REPRODUCTION_THRESHOLD
+            and self.age >= self.model.param("MIN_REPRODUCTION_AGE")
+            and self.resources >= self.model.param("REPRODUCTION_THRESHOLD")
             and self.model.steps >= self.next_reproduction_step
             and self.unique_id not in self.model.parents_used_this_step
         )
@@ -84,10 +106,10 @@ class SocietyAgent(mesa.Agent):
     def reproduction_status(self):
         if not self.alive:
             return "Dead"
-        if self.age < config.MIN_REPRODUCTION_AGE:
-            return f"Too young (reproduces from age {config.MIN_REPRODUCTION_AGE})"
-        if self.resources < config.REPRODUCTION_THRESHOLD:
-            return f"Needs {config.REPRODUCTION_THRESHOLD:.1f} resources"
+        if self.age < self.model.param("MIN_REPRODUCTION_AGE"):
+            return f"Too young (reproduces from age {self.model.param('MIN_REPRODUCTION_AGE')})"
+        if self.resources < self.model.param("REPRODUCTION_THRESHOLD"):
+            return f"Needs {self.model.param('REPRODUCTION_THRESHOLD'):.1f} resources"
         if self.model.steps + 1 < self.next_reproduction_step:
             return f"Cooldown until timestep {self.next_reproduction_step}"
         return "Ready: needs an eligible partner from its population nearby"
@@ -113,14 +135,14 @@ class SocietyAgent(mesa.Agent):
                     rival_positions.append(agent.position)
 
         # TEND or MOVE ON. On its own population's farm, the agent stays to work
-        # it with chance 1 − risk_tolerance: cautious agents settle down, bold
-        # ones roam in search of wild food, rival farms to raid, and fights.
+        # it with chance farming_tendency: farmers settle down, the others roam
+        # in search of wild food, rival farms to raid, and fights.
         # Agents only stay while saving up: once they have enough to reproduce,
         # they move on, which is how settled farmers meet partners.
         environment = self.model.environment
         on_own_farm = self.model.farms.get(self.position) == self.population
-        saving_up = self.resources < config.REPRODUCTION_THRESHOLD
-        if on_own_farm and saving_up and self.random.random() < 1 - self.genome["risk_tolerance"]:
+        saving_up = self.resources < self.model.param("REPRODUCTION_THRESHOLD")
+        if on_own_farm and saving_up and self.random.random() < self.traits["farming_tendency"]:
             destination = self.position
             reason = "stayed to tend its population's farm"
             rival_note = ""
@@ -132,11 +154,13 @@ class SocietyAgent(mesa.Agent):
         # Chebyshev distance: moving one cell diagonally counts as one move.
         distance = max(abs(destination[0] - old_position[0]), abs(destination[1] - old_position[1]))
         self.turn_movement_cost = distance * environment["movement_cost"]
-        if destination != old_position:
-            movement = f"moved {old_position} → {destination}"
-        else:
-            movement = f"stayed at {destination}"
-        self.turn_movement_note = f"{movement}: {reason}. Saw agents: {', '.join(seen) or 'none'}.{rival_note}"
+        # The explanation text is only for the dashboard; batch runs skip it.
+        if not self.model.headless:
+            if destination != old_position:
+                movement = f"moved {old_position} → {destination}"
+            else:
+                movement = f"stayed at {destination}"
+            self.turn_movement_note = f"{movement}: {reason}. Saw agents: {', '.join(seen) or 'none'}.{rival_note}"
         # Meeting rivals leads to a confrontation; see SocietyModel.confront().
         self.model.detect_encounters(self)
 
@@ -154,7 +178,7 @@ class SocietyAgent(mesa.Agent):
         options = visible
         rival_note = ""
         if rival_positions:
-            if self.random.random() < self.genome["sociability"]:
+            if self.random.random() < self.traits["sociability"]:
                 self.model.count_action(self.population, "ignore")
                 rival_note = " Ignored the rivals in view."
             else:
@@ -180,7 +204,7 @@ class SocietyAgent(mesa.Agent):
             if self.model.is_rival_farm(position, self.population) and self.model.food[position] > 0:
                 rival_farms.append(position)
         if rival_farms:
-            if self.random.random() < 1 - self.genome["cooperative_tendency"]:
+            if self.random.random() < 1 - self.traits["cooperative_tendency"]:
                 self.model.count_action(self.population, "raid")
                 rival_note += " Willing to raid a rival farm."
             else:
@@ -206,7 +230,7 @@ class SocietyAgent(mesa.Agent):
         environment = self.model.environment
         poor = most_food < environment["survival_cost"] + environment["movement_cost"]
         far_cells = self.cells_two_away()
-        if poor and far_cells and self.random.random() < self.genome["exploratory_tendency"]:
+        if poor and far_cells and self.random.random() < self.traits["exploratory_tendency"]:
             destination = self.random.choice(far_cells)
             reason = f"explored: the most food in view ({most_food:.2f}) was too little"
         elif most_food > 0:
@@ -269,6 +293,7 @@ class SocietyAgent(mesa.Agent):
         survival_cost = self.model.environment["survival_cost"]
         self.resources += (self.turn_food + self.turn_stolen - self.turn_movement_cost
                            - self.turn_fight_cost - survival_cost)
+        self.total_food += self.turn_food
         self.age += 1
 
         # Death removes an agent from Mesa's living-agent list.
@@ -277,12 +302,15 @@ class SocietyAgent(mesa.Agent):
             self.alive = False
             self.status = "Dead: resources ran out"
             self.model.starvation_deaths += 1
+            self.model.deaths[self.population]["starvation"] += 1
         elif self.age >= self.model.environment["maximum_age"]:
             self.alive = False
             self.status = f"Dead: reached age {self.model.environment['maximum_age']}"
             self.model.old_age_deaths += 1
+            self.model.deaths[self.population]["old_age"] += 1
         if not self.alive:
             self.remove()
+            self.model.record_lifetime(self, "starvation" if self.resources <= 0 else "old_age")
             if self.resources <= 0:
                 self.model.add_event("death", f"{self.name} starved at age {self.age}",
                                      [self.unique_id], self.position)
@@ -295,6 +323,9 @@ class SocietyAgent(mesa.Agent):
         if self.alive:
             farm_note, planting_cost = self.farm()
 
+        # The rest only writes the explanation for the dashboard.
+        if self.model.headless:
+            return
         # :.2f means show a number with two digits after the decimal point.
         extra_text = ""
         if self.turn_stolen > 0:
@@ -316,14 +347,16 @@ class SocietyAgent(mesa.Agent):
     # Farming, at the end of a living agent's turn. Returns (note, cost paid).
     # Standing on its own population's farm counts as working it, which stops
     # the farm from being abandoned. An agent that can afford it may also plant
-    # a new farm, with chance 1 − risk_tolerance (cautious agents invest in a
-    # safe food supply). Only fertile land can be farmed: a wild patch that is
+    # a new farm, with chance farming_tendency (investing in a safe food
+    # supply). Only fertile land can be farmed: a wild patch that is
     # not a farm yet. The agent plants on its own cell, or, when working a farm,
     # on a fertile neighbouring cell. That is how farmland spreads into villages.
     def farm(self):
         model = self.model
         note = ""
         site = None
+        if not model.param("FARMS_ENABLED"):
+            return note, 0.0
         if model.farms.get(self.position) == self.population:
             model.farm_last_worked[self.position] = model.steps
             note = " Worked its population's farm."
@@ -336,27 +369,63 @@ class SocietyAgent(mesa.Agent):
         elif model.can_plant(self.position):
             site = self.position
 
-        if site is None or self.resources < config.PLANT_MIN_RESOURCES:
+        if site is None or self.resources < model.param("PLANT_MIN_RESOURCES"):
             return note, 0.0
-        if self.random.random() < 1 - self.genome["risk_tolerance"]:
-            self.resources -= config.PLANT_COST
+        if self.random.random() < self.traits["farming_tendency"]:
+            cost = model.param("PLANT_COST")
+            self.resources -= cost
             model.plant_farm(site, self.population, self)
-            return note + f" Planted a farm at {site} for population {self.population}.", config.PLANT_COST
+            return note + f" Planted a farm at {site} for population {self.population}.", cost
         return note, 0.0
 
 
 class SocietyModel(mesa.Model):
     # Create the world and its starting agents.
-    def __init__(self, environment_name=config.DEFAULT_ENVIRONMENT, world_name=config.DEFAULT_WORLD):
+    #   environment_name  "ABUNDANT", "SCARCE", "LEVEL_1" ... "LEVEL_5", or a level number 1-5.
+    #   world_name        "SMALL", "LARGE" or "EXPERIMENT" (see config.WORLDS).
+    #   seed              the same seed always gives exactly the same run.
+    #   headless          True for batch runs: skips everything only the dashboard
+    #                     needs (explanation text, event log, encounter list, dead
+    #                     agents). The simulation itself is identical either way.
+    #   neutral           True for the neutral control: genes are inherited but
+    #                     behaviour is random, so there is no selection (see SocietyAgent).
+    #   overrides         {name: value} replacing environment settings (e.g.
+    #                     "farm_growth") or config constants (e.g. "FIGHT_COST") for this run.
+    #   gene_pools        {"A": [genome, ...], "B": [...]}: starting agents of that
+    #                     population draw their genome from the list instead of at random.
+    #   frozen_genomes    True stops evolution: every child gets a genome copied
+    #                     from its population's founders instead of inheriting.
+    #   record_every      headless runs save a data row every this many timesteps.
+    def __init__(self, environment_name=config.DEFAULT_ENVIRONMENT, world_name=config.DEFAULT_WORLD,
+                 seed=None, headless=False, neutral=False, overrides=None, gene_pools=None,
+                 frozen_genomes=False, record_every=1):
         # A seed makes Reset repeat the same sequence of random choices.
-        super().__init__(rng=config.SEED)
-        if config.CHILD_STARTING_RESOURCES != 2 * config.REPRODUCTION_COST_PER_PARENT:
-            raise ValueError("Child starting resources must equal both parents' combined contributions.")
+        if seed is None:
+            seed = config.SEED
+        super().__init__(rng=seed)
+        self.seed = seed
+        self.headless = headless
+        self.neutral = neutral
+        self.frozen_genomes = frozen_genomes
+        self.record_every = record_every
+        environment_name = config.environment_name(environment_name)
         self.environment_name = environment_name
         self.world_name = world_name
         # Copy the presets so this run keeps its own settings.
         self.environment = config.ENVIRONMENTS[environment_name].copy()
         self.world = config.WORLDS[world_name].copy()
+        # Overrides: lower-case names are environment settings, upper-case
+        # names are constants from config.py (read through self.param()).
+        self.overrides = {}
+        for name, value in (overrides or {}).items():
+            if name in self.environment:
+                self.environment[name] = value
+            elif name.isupper() and hasattr(config, name):
+                self.overrides[name] = value
+            else:
+                raise ValueError(f"Unknown parameter override: {name}")
+        if self.param("CHILD_STARTING_RESOURCES") != 2 * self.param("REPRODUCTION_COST_PER_PARENT"):
+            raise ValueError("Child starting resources must equal both parents' combined contributions.")
         self.grid_size = self.world["grid_size"]
         self.food = {}
         self.capacity = {}
@@ -398,11 +467,22 @@ class SocietyModel(mesa.Model):
                     )
                     starting_agents.append((f"{population}{number}", position, self.random.random()))
 
+        # Every agent ever created, living or dead, for the dashboard's inspector.
+        # Headless runs leave it empty and keep model.lifetime_records instead.
         self.all_agents = []
+        self.lifetime_records = []  # One row per dead agent. See record_lifetime().
+        self.deaths = {"A": {"starvation": 0, "old_age": 0}, "B": {"starvation": 0, "old_age": 0}}
+        self.agent_steps = {"A": 0, "B": 0}  # Turns lived, summed over a population's agents.
+        self.founding_pools = {"A": [], "B": []}  # The starting agents' genomes.
         self.next_agent_number = {"A": 1, "B": 1}
         for name, position, exploration in starting_agents:
-            agent = SocietyAgent(self, name, position, exploration)
-            self.all_agents.append(agent)
+            genome = None
+            if gene_pools and gene_pools.get(name[0]):
+                genome = self.random.choice(gene_pools[name[0]])
+            agent = SocietyAgent(self, name, position, exploration, genome=genome)
+            if not headless:
+                self.all_agents.append(agent)
+            self.founding_pools[agent.population].append(agent.genome.copy())
             self.next_agent_number[agent.population] = max(
                 self.next_agent_number[agent.population], int(name[1:]) + 1
             )
@@ -460,6 +540,7 @@ class SocietyModel(mesa.Model):
             "Highest generation reached": "highest_generation",
             "Average generation": "average_generation",
             "Fights per timestep": "fights_this_step",
+            "Cumulative fights": "cumulative_fights",
         }
         # One column per population and response, counted per timestep.
         for population in ["A", "B"]:
@@ -467,10 +548,17 @@ class SocietyModel(mesa.Model):
                 reporters[f"Population {population} {action}"] = f"{population}_{action}"
             reporters[f"Population {population} farms"] = f"{population}_farms"
             reporters[f"Population {population} stolen"] = f"{population}_stolen"
+        # Running totals. Analysis uses these, because they stay correct when
+        # a row is saved only every few timesteps (record_every).
+        for population in ["A", "B"]:
+            for action in config.ACTIONS:
+                reporters[f"Population {population} cumulative {action}"] = f"{population}_cumulative_{action}"
+            for column in ["cumulative stolen", "starvation deaths", "old age deaths", "agent steps"]:
+                reporters[f"Population {population} {column}"] = f"{population}_{column.replace(' ', '_')}"
         # Add one data column for each trait in each population.
         # A reporter string tells Mesa where to read that value on this model.
         for population in ["A", "B"]:
-            for trait in self.all_agents[0].genome:
+            for trait in config.GENES:
                 column = f"Population {population} average {trait}"
                 reporters[column] = f"{population}_average_{trait}"
         self.datacollector = DataCollector(model_reporters=reporters)
@@ -483,6 +571,45 @@ class SocietyModel(mesa.Model):
             if agent.population == population:
                 count += 1
         return count
+
+    # A constant from config.py, unless this run overrides it.
+    def param(self, name):
+        if name in self.overrides:
+            return self.overrides[name]
+        return getattr(config, name)
+
+    # Switch to another abundance level in the middle of a run (the shock
+    # experiment). The land stays the same; only the growth rates change.
+    def set_environment(self, name_or_level):
+        name = config.environment_name(name_or_level)
+        self.environment_name = name
+        for setting in ["level", "multiplier", "regeneration", "farm_growth"]:
+            self.environment[setting] = config.ENVIRONMENTS[name][setting]
+
+    # Save one row describing an agent's whole life. Called when it dies.
+    def record_lifetime(self, agent, cause):
+        record = {
+            "id": agent.unique_id,
+            "population": agent.population,
+            "generation": agent.generation,
+            "birth_step": agent.birth_step,
+            "lifespan": agent.age,
+            "food_eaten": agent.total_food,
+            "stolen": agent.total_stolen,
+            "lost": agent.total_lost,
+            "offspring": agent.offspring,
+            "cause": cause,
+        }
+        record.update(agent.genome)
+        self.lifetime_records.append(record)
+
+    # The genomes of a population's living agents: its gene pool.
+    def living_genomes(self, population):
+        genomes = []
+        for agent in self.agents:
+            if agent.population == population:
+                genomes.append(agent.genome.copy())
+        return genomes
 
     # The cells within "radius" steps of a position, including that cell.
     # Radius 1 is the 3 by 3 area an agent can see.
@@ -508,7 +635,7 @@ class SocietyModel(mesa.Model):
     def plant_farm(self, position, population, planter):
         self.farms[position] = population
         self.farm_last_worked[position] = self.steps
-        self.capacity[position] = config.FARM_CAPACITY
+        self.capacity[position] = self.param("FARM_CAPACITY")
         self.farms_planted[population] += 1
         self.add_event("farm", f"{planter.name} planted a farm for population {population}",
                        [planter.unique_id], position)
@@ -517,7 +644,7 @@ class SocietyModel(mesa.Model):
     # what it was before: bare land or a wild patch.
     def abandon_farms(self):
         for position in list(self.farms):
-            if self.steps - self.farm_last_worked[position] > config.FARM_ABANDON_STEPS:
+            if self.steps - self.farm_last_worked[position] > self.param("FARM_ABANDON_STEPS"):
                 population = self.farms[position]
                 del self.farms[position]
                 del self.farm_last_worked[position]
@@ -546,7 +673,7 @@ class SocietyModel(mesa.Model):
             self.food[position] = 0.0
             for agent in agents:
                 agent.turn_food = food / len(agents)
-                if len(agents) > 1:
+                if len(agents) > 1 and not self.headless:
                     agent.turn_food_note += f" Split {food:.2f} food with {len(agents) - 1} other(s)."
 
             owner = self.farms.get(position)
@@ -560,7 +687,8 @@ class SocietyModel(mesa.Model):
                 else:
                     raiders.append(agent)
                     self.add_stolen(agent.population, agent.turn_food)
-            if raiders and not defended:
+                    agent.total_stolen += agent.turn_food
+            if raiders and not defended and not self.headless:
                 names = " and ".join(agent.name for agent in raiders)
                 ids = []
                 for agent in raiders:
@@ -583,8 +711,8 @@ class SocietyModel(mesa.Model):
         for agent in [first, second]:
             # Hungry agents share less: with no resources the chance of
             # cooperating is halved; at the reproduction threshold it is unchanged.
-            wealth = min(1.0, max(0.0, agent.current_resources()) / config.REPRODUCTION_THRESHOLD)
-            chance = agent.genome["cooperative_tendency"] * (0.5 + 0.5 * wealth)
+            wealth = min(1.0, max(0.0, agent.current_resources()) / self.param("REPRODUCTION_THRESHOLD"))
+            chance = agent.traits["cooperative_tendency"] * (0.5 + 0.5 * wealth)
             if self.random.random() < chance:
                 self.count_action(agent.population, "cooperate")
             else:
@@ -592,7 +720,7 @@ class SocietyModel(mesa.Model):
                 competing.append(agent)
 
         if not competing:
-            for agent in [first, second]:
+            for agent in ([] if self.headless else [first, second]):
                 agent.turn_meeting_note += f" Met {first.name if agent is second else second.name} peacefully."
             return
         fought = False
@@ -601,10 +729,10 @@ class SocietyModel(mesa.Model):
         else:
             fighting = []
             for agent in competing:
-                if self.random.random() < agent.genome["risk_tolerance"]:
+                if self.random.random() < agent.traits["risk_tolerance"]:
                     fighting.append(agent)
             if not fighting:
-                for agent in [first, second]:
+                for agent in ([] if self.headless else [first, second]):
                     agent.turn_meeting_note += " Both sides threatened, then backed down."
                 return
             if len(fighting) == 1:
@@ -613,7 +741,7 @@ class SocietyModel(mesa.Model):
                 fought = True
                 weights = []
                 for agent in fighting:
-                    agent.turn_fight_cost += config.FIGHT_COST
+                    agent.turn_fight_cost += self.param("FIGHT_COST")
                     weights.append(max(agent.current_resources(), 0.1))
                 robber = self.random.choices(fighting, weights=weights)[0]
                 self.fights_this_step += 1
@@ -623,10 +751,14 @@ class SocietyModel(mesa.Model):
 
     # Move STEAL_FRACTION of the victim's resources to the robber.
     def rob(self, robber, victim, fought):
-        amount = config.STEAL_FRACTION * max(victim.current_resources(), 0.0)
+        amount = self.param("STEAL_FRACTION") * max(victim.current_resources(), 0.0)
         victim.turn_stolen -= amount
         robber.turn_stolen += amount
+        victim.total_lost += amount
+        robber.total_stolen += amount
         self.add_stolen(robber.population, amount)
+        if self.headless:
+            return
         if fought:
             text = f"{robber.name} beat {victim.name} in a fight and robbed {amount:.2f}"
         else:
@@ -647,11 +779,16 @@ class SocietyModel(mesa.Model):
     def make_child_genome(self, first, second):
         genome = {}
         self.last_mutations = []
+        # Frozen genomes (experiment E3's "no further evolution" runs): the
+        # child gets a copy of a random founder's genome, so the population's
+        # gene pool never changes however long the run lasts.
+        if self.frozen_genomes:
+            return self.random.choice(self.founding_pools[first.population]).copy()
         for trait in first.genome:
             value = self.random.choice([first.genome[trait], second.genome[trait]])
-            if self.random.random() < config.MUTATION_RATE:
+            if self.random.random() < self.param("MUTATION_RATE"):
                 # gauss(0, std) samples a small change centered on zero.
-                value += self.random.gauss(0, config.MUTATION_STD)
+                value += self.random.gauss(0, self.param("MUTATION_STD"))
                 self.last_mutations.append(trait)
             # Clamp: stop values going below zero or above one.
             genome[trait] = max(0.0, min(1.0, value))
@@ -676,7 +813,7 @@ class SocietyModel(mesa.Model):
             # The partner is the earliest later candidate in the shuffled list
             # that is within MATING_RADIUS, same population, and still able.
             second = None
-            for other in self.nearby_agents(first.position, config.MATING_RADIUS):
+            for other in self.nearby_agents(first.position, self.param("MATING_RADIUS")):
                 if other.unique_id not in order or order[other.unique_id] <= order[first.unique_id]:
                     continue
                 if other.population != first.population or not other.can_reproduce():
@@ -696,12 +833,14 @@ class SocietyModel(mesa.Model):
                 self, name, position, genome=genome, generation=generation,
                 parent_ids=(first.unique_id, second.unique_id),
             )
-            self.all_agents.append(child)
+            if not self.headless:
+                self.all_agents.append(child)
 
             # Combined parent contributions become the child's holdings.
             for parent in [first, second]:
-                parent.resources -= config.REPRODUCTION_COST_PER_PARENT
-                parent.next_reproduction_step = self.steps + config.REPRODUCTION_COOLDOWN
+                parent.resources -= self.param("REPRODUCTION_COST_PER_PARENT")
+                parent.next_reproduction_step = self.steps + self.param("REPRODUCTION_COOLDOWN")
+                parent.offspring += 1
                 self.parents_used_this_step.add(parent.unique_id)
 
             self.births_this_step += 1
@@ -711,6 +850,8 @@ class SocietyModel(mesa.Model):
             else:
                 self.population_b_births += 1
             self.highest_generation = max(self.highest_generation, generation)
+            if self.headless:
+                continue
             event_text = f"{child.name} born to {first.name} + {second.name} (generation {generation})"
             if self.last_mutations:
                 event_text += f"; mutated: {', '.join(self.last_mutations)}"
@@ -722,7 +863,7 @@ class SocietyModel(mesa.Model):
             genome_text = ", ".join(genome_description)
             self.messages.append(
                 f"Reproduction: {first.name} + {second.name} → {child.name} at {position}. "
-                f"Parents contributed {config.REPRODUCTION_COST_PER_PARENT:.2f} each; "
+                f"Parents contributed {self.param('REPRODUCTION_COST_PER_PARENT'):.2f} each; "
                 f"child starts with {child.resources:.2f}. Child generation: {generation}. "
                 f"Child genome: {genome_text}. Parents next eligible at timestep "
                 f"{first.next_reproduction_step}."
@@ -734,9 +875,9 @@ class SocietyModel(mesa.Model):
     # Called with no agent, it checks every living pair.
     # A pair may be detected repeatedly, but is recorded only on its first sighting.
     def detect_encounters(self, mover=None):
-        living_agents = list(self.agents)
         pairs = []
         if mover is None:
+            living_agents = list(self.agents)
             for first_index in range(len(living_agents)):
                 # Start after first_index so we never check an agent against itself.
                 for second_index in range(first_index + 1, len(living_agents)):
@@ -760,6 +901,11 @@ class SocietyModel(mesa.Model):
                 continue
 
             self.encounter_pairs.add(pair)
+            self.encounters_per_timestep += 1
+            self.cumulative_encounters += 1
+            if self.headless:
+                self.confront(first, second)
+                continue
             record = {
                 "timestep": self.steps,
                 "agent_1_id": first.unique_id,
@@ -776,8 +922,6 @@ class SocietyModel(mesa.Model):
             }
             self.encounters_this_step.append(record)
             self.encounters.append(record)
-            self.encounters_per_timestep += 1
-            self.cumulative_encounters += 1
             self.messages.append(
                 f"Encounter: {first.name} (ID {first.unique_id}, {first.population}) "
                 f"at {first.position}, resources {first.resources:.2f}; "
@@ -790,6 +934,8 @@ class SocietyModel(mesa.Model):
     # Save one short event for the dashboard's event log. The detailed
     # per-turn explanations stay in self.messages for the debug page.
     def add_event(self, kind, text, agent_ids, position):
+        if self.headless:
+            return
         self.events.append({
             "timestep": self.steps,
             "kind": kind,
@@ -803,9 +949,10 @@ class SocietyModel(mesa.Model):
 
     # Calculate the summary values, then let Mesa save them as one data row.
     def collect_data(self):
-        self.population_a = self.count_population("A")
-        self.population_b = self.count_population("B")
         self.environmental_resources = sum(self.food.values())
+        # One pass over the living agents, adding up everything that is averaged.
+        counts = {"A": 0, "B": 0}
+        gene_totals = {"A": dict.fromkeys(config.GENES, 0.0), "B": dict.fromkeys(config.GENES, 0.0)}
         total_resources = 0.0
         total_age = 0
         total_generation = 0
@@ -813,6 +960,12 @@ class SocietyModel(mesa.Model):
             total_resources += agent.resources
             total_age += agent.age
             total_generation += agent.generation
+            counts[agent.population] += 1
+            totals = gene_totals[agent.population]
+            for trait in config.GENES:
+                totals[trait] += agent.genome[trait]
+        self.population_a = counts["A"]
+        self.population_b = counts["B"]
         self.average_resources = 0.0
         self.average_age = 0.0
         self.average_generation = 0.0
@@ -821,26 +974,25 @@ class SocietyModel(mesa.Model):
             self.average_age = total_age / len(self.agents)
             self.average_generation = total_generation / len(self.agents)
         for population in ["A", "B"]:
-            for trait in self.all_agents[0].genome:
-                total = 0.0
-                count = 0
-                for agent in self.agents:
-                    if agent.population == population:
-                        total += agent.genome[trait]
-                        count += 1
+            for trait in config.GENES:
                 average = 0.0
-                if count > 0:
-                    average = total / count
+                if counts[population] > 0:
+                    average = gene_totals[population][trait] / counts[population]
                 # setattr stores a named value for DataCollector to read.
                 setattr(self, f"{population}_average_{trait}", average)
             for action in config.ACTIONS:
                 setattr(self, f"{population}_{action}", self.actions_this_step[population][action])
+                setattr(self, f"{population}_cumulative_{action}", self.cumulative_actions[population][action])
             farm_count = 0
             for owner in self.farms.values():
                 if owner == population:
                     farm_count += 1
             setattr(self, f"{population}_farms", farm_count)
             setattr(self, f"{population}_stolen", self.stolen_this_step[population])
+            setattr(self, f"{population}_cumulative_stolen", self.cumulative_stolen[population])
+            setattr(self, f"{population}_starvation_deaths", self.deaths[population]["starvation"])
+            setattr(self, f"{population}_old_age_deaths", self.deaths[population]["old_age"])
+            setattr(self, f"{population}_agent_steps", self.agent_steps[population])
         self.datacollector.collect(self)
 
     # Advance the whole world by one timestep.
@@ -859,6 +1011,7 @@ class SocietyModel(mesa.Model):
         # Mesa increases self.steps automatically before this function runs.
         for agent in self.agents:
             agent.start_turn()
+            self.agent_steps[agent.population] += 1
         # Phase 1: shuffle_do calls each living agent's step() once, in a random order.
         self.agents.shuffle_do("step")
         # Phase 2: divide the food in every occupied cell.
@@ -879,13 +1032,23 @@ class SocietyModel(mesa.Model):
         # Refill each food cell, without going above its capacity.
         # Farms grow at farm_growth; wild patches regrow at regeneration.
         restored = 0.0
-        for position in self.food:
+        regeneration = self.environment["regeneration"]
+        farm_growth = self.environment["farm_growth"]
+        for position, capacity in self.capacity.items():
             before = self.food[position]
-            growth = self.environment["regeneration"]
+            if capacity == 0 and before == 0:
+                continue  # Barren land: nothing to grow.
+            growth = regeneration
             if position in self.farms:
-                growth = self.environment["farm_growth"]
-            self.food[position] = min(self.capacity[position], before + growth)
+                growth = farm_growth
+            self.food[position] = min(capacity, before + growth)
             restored += self.food[position] - before
+        self.running = len(self.agents) > 0
+        if self.headless:
+            # Batch runs save a row every record_every timesteps and nothing else.
+            if self.steps % self.record_every == 0:
+                self.collect_data()
+            return
         self.messages.append(f"Food regenerated by {restored:.2f} units after all turns.")
         self.messages.append(
             f"Cross-population encounters this timestep: {self.encounters_per_timestep}; "
@@ -896,7 +1059,6 @@ class SocietyModel(mesa.Model):
             f"Births this timestep: {self.births_this_step}; cumulative: {self.cumulative_births}. "
             f"Highest generation reached: {self.highest_generation}."
         )
-        self.running = len(self.agents) > 0
         self.collect_data()
 
         # Show the same explanation in Terminal as on the web page.

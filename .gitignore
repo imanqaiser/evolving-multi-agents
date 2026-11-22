@@ -2,3 +2,5 @@
 __pycache__/
 .pytest_cache/
 *.pyc
+# Raw per-agent lifetime rows are large; regenerate them with experiments/e2_gradient.py.
+results/*_lifetimes.csv.gz

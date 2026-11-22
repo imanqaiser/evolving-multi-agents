@@ -8,10 +8,23 @@ DEFAULT_WORLD = "SMALL"
 # LARGE is for experiments: random starting agents (A in the top half, B in the
 # bottom half) and random patches, where each cell becomes a patch with
 # probability "patch_density".
+# EXPERIMENT is the world every experiment in experiments/ uses: big enough
+# that even the scarcest abundance level holds 100+ agents, so selection is
+# not swamped by random drift (see DESIGN.md, "Calibration").
 WORLDS = {
     "SMALL": {"grid_size": 3, "print_turns": True},
     "LARGE": {"grid_size": 30, "agents_per_population": 30, "print_turns": False},
+    "EXPERIMENT": {"grid_size": 50, "agents_per_population": 60, "print_turns": False},
 }
+
+# The genome: five tendencies between 0 and 1 (see SocietyAgent in model.py).
+GENES = [
+    "exploratory_tendency",
+    "risk_tolerance",
+    "sociability",
+    "cooperative_tendency",
+    "farming_tendency",
+]
 
 # Reproduction transfers these resources from the parents to their child.
 # Keep CHILD_STARTING_RESOURCES equal to twice REPRODUCTION_COST_PER_PARENT.
@@ -43,34 +56,53 @@ PLANT_COST = 1.0           # Resources spent to plant a farm.
 PLANT_MIN_RESOURCES = 3.0  # Agents with less than this never plant.
 FARM_CAPACITY = 4.0        # Most food a farm can hold.
 FARM_ABANDON_STEPS = 10    # A farm nobody from its population works for this long disappears.
+FARMS_ENABLED = True       # False (as a run override) turns planting off: wild food only.
 
-# Experimental defaults. Change the numbers or patch positions here.
-# Wild patches are scattered and regrow slowly: enough to survive on, not to
-# thrive. Bare land produces nothing until somebody plants a farm on it.
-ENVIRONMENTS = {
-    "ABUNDANT": {
+# ---------------------------------------------------------------------------
+# Environments: one scarcity gradient.
+# The geography is the same at every level (same share of fertile cells, same
+# patch size). Only productivity changes: wild regrowth and farm growth are
+# both the base value times one multiplier. Level 1 is the scarcest, level 5
+# the most plentiful. The multipliers were calibrated once (see DESIGN.md,
+# "Calibration") and are frozen: do not tune them to change a result.
+# ---------------------------------------------------------------------------
+BASE_REGENERATION = 0.15  # Wild food regrown per patch per timestep at multiplier 1.
+BASE_FARM_GROWTH = 0.7    # Farm food grown per farm per timestep at multiplier 1.
+ABUNDANCE_MULTIPLIERS = {1: 0.6, 2: 1.0, 3: 1.6, 4: 2.5, 5: 4.0}
+MIDDLE_LEVEL = 3
+
+
+# The settings for one abundance level (1 to 5).
+def make_environment(level):
+    multiplier = ABUNDANCE_MULTIPLIERS[level]
+    return {
+        "level": level,
+        "multiplier": multiplier,
         "starting_resources": 5.0,
-        "patches": [(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)],
+        # SMALL world only: hand-placed patches (fewer in the scarcer levels).
+        "patches": [(1, 0), (1, 1), (1, 2)] if level <= 2 else [(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)],
         "patch_density": 0.25,
         "food_per_patch": 2.0,
-        "regeneration": 0.15,
-        "farm_growth": 0.7,
+        "regeneration": BASE_REGENERATION * multiplier,
+        "farm_growth": BASE_FARM_GROWTH * multiplier,
         "survival_cost": 0.5,
         "movement_cost": 0.25,
         "maximum_age": MAX_AGE,
-    },
-    "SCARCE": {
-        "starting_resources": 5.0,
-        "patches": [(1, 0), (1, 1), (1, 2)],
-        "patch_density": 0.2,
-        "food_per_patch": 2.0,
-        "regeneration": 0.1,
-        "farm_growth": 0.6,
-        "survival_cost": 0.5,
-        "movement_cost": 0.25,
-        "maximum_age": MAX_AGE,
-    },
-}
+    }
+
+
+# ABUNDANT and SCARCE are aliases for the two ends of the gradient.
+ENVIRONMENTS = {"ABUNDANT": make_environment(5), "SCARCE": make_environment(1)}
+for _level in ABUNDANCE_MULTIPLIERS:
+    ENVIRONMENTS[f"LEVEL_{_level}"] = make_environment(_level)
+
+
+# Accept "ABUNDANT", "LEVEL_3", or just the number 3.
+def environment_name(name_or_level):
+    if isinstance(name_or_level, int):
+        return f"LEVEL_{name_or_level}"
+    return name_or_level
+
 
 # SMALL world only: name, starting position, exploratory tendency.
 STARTING_AGENTS = [

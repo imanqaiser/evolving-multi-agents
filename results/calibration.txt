@@ -1,0 +1,12 @@
+  10/48 runs done (20 s)
+  20/48 runs done (38 s)
+  30/48 runs done (67 s)
+  40/48 runs done (136 s)
+  48/48 runs done (187 s)
+multiplier  total agents  smaller population  both survive  starvation share  starved per 1000 agent-steps  generations
+      0.60           111                  37          1.00              0.16                          3.41          117
+      1.00           517                 110          0.88              0.18                          4.02          141
+      1.60           496                 225          1.00              0.12                          2.49          142
+      2.50           794                 351          1.00              0.12                          2.42          160
+      4.00          1272                 515          1.00              0.09                          1.93          182
+      6.00          1755                 739          1.00              0.08                          1.64          194

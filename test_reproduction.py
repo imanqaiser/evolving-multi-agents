@@ -1,5 +1,7 @@
 # Run with: python -m unittest -v test_reproduction
 # These checks use small, controlled worlds. They do not tune the real presets.
+# Farming tests set farming_tendency: since the fifth gene was added, tending and
+# planting no longer depend on risk_tolerance (see DESIGN.md).
 import contextlib
 import io
 import unittest
@@ -96,9 +98,9 @@ class ReproductionTests(unittest.TestCase):
             first.genome[trait] = 0.1
             second.genome[trait] = 0.9
         with patch.object(config, 'MUTATION_RATE', 0):
-            with patch.object(model.random, 'choice', side_effect=[0.1, 0.9, 0.1, 0.9]):
+            with patch.object(model.random, 'choice', side_effect=[0.1, 0.9, 0.1, 0.9, 0.1]):
                 genome = model.make_child_genome(first, second)
-        self.assertEqual(list(genome.values()), [0.1, 0.9, 0.1, 0.9])
+        self.assertEqual(list(genome.values()), [0.1, 0.9, 0.1, 0.9, 0.1])
         self.assertEqual(set(first.genome.values()), {0.1})
         self.assertEqual(set(second.genome.values()), {0.9})
 
@@ -106,10 +108,10 @@ class ReproductionTests(unittest.TestCase):
         model, first, second = self.make_pair()
         for trait in first.genome:
             first.genome[trait] = second.genome[trait] = 0.5
-        with patch.object(model.random, 'random', side_effect=[0.01, 0.9, 0.01, 0.9]):
+        with patch.object(model.random, 'random', side_effect=[0.01, 0.9, 0.01, 0.9, 0.9]):
             with patch.object(model.random, 'gauss', side_effect=[2.0, -2.0]) as normal:
                 genome = model.make_child_genome(first, second)
-        self.assertEqual(list(genome.values()), [1.0, 0.5, 0.0, 0.5])
+        self.assertEqual(list(genome.values()), [1.0, 0.5, 0.0, 0.5, 0.5])
         self.assertEqual(normal.call_count, 2)
         normal.assert_called_with(0, config.MUTATION_STD)
         for _ in range(1000):
@@ -325,8 +327,8 @@ class ReproductionTests(unittest.TestCase):
         self.assertEqual(model.cumulative_actions['A']['avoid'], 1)
         self.assertEqual(model.cumulative_encounters, 0)
 
-    def test_cautious_agent_plants_only_on_fertile_land(self):
-        model, first, second = self.make_rivals({'risk_tolerance': 0}, {})
+    def test_farmer_plants_only_on_fertile_land(self):
+        model, first, second = self.make_rivals({'farming_tendency': 1}, {})
         first.position = (0, 0)  # Bare land in the SMALL world.
         first.farm()
         self.assertEqual(model.farms, {})
@@ -337,7 +339,7 @@ class ReproductionTests(unittest.TestCase):
         self.assertEqual(model.capacity[(1, 1)], config.FARM_CAPACITY)
 
     def test_farms_spread_to_fertile_neighbours_and_are_abandoned(self):
-        model, first, second = self.make_rivals({'risk_tolerance': 0}, {})
+        model, first, second = self.make_rivals({'farming_tendency': 1}, {})
         model.plant_farm((1, 1), 'A', first)
         first.farm()
         self.assertEqual(len(model.farms), 2)
@@ -348,8 +350,8 @@ class ReproductionTests(unittest.TestCase):
         self.assertEqual(model.farms, {})
         self.assertEqual(model.capacity[(1, 1)], model.wild_capacity[(1, 1)])
 
-    def test_cautious_farmer_tends_while_saving_up(self):
-        model, first, second = self.make_rivals({'risk_tolerance': 0}, {})
+    def test_farmer_tends_while_saving_up(self):
+        model, first, second = self.make_rivals({'farming_tendency': 1}, {})
         second.position = (2, 2)
         model.plant_farm((1, 1), 'A', first)
         first.resources = config.REPRODUCTION_THRESHOLD - 1
