@@ -1,0 +1,10 @@
+condition,n,population,exploratory_tendency,exploratory_tendency_ci,risk_tolerance,risk_tolerance_ci,sociability,sociability_ci,cooperative_tendency,cooperative_tendency_ci,farming_tendency,farming_tendency_ci,fights_per_encounter,fights_per_encounter_ci,runs_everyone_died,runs_both_populations_alive,median_last_step_alive
+fight cost 0,20,502.4,0.4246,0.04459,0.7758,0.053,0.6202,0.06713,0.2129,0.05779,0.6919,0.02337,0.4962,0.07706,0,16,2000
+fight cost 0.5,20,498.9,0.4161,0.05387,0.6924,0.05532,0.5602,0.06516,0.2313,0.05981,0.6872,0.01864,0.3064,0.06012,0,14,2000
+fight cost 1.5,20,497,0.4079,0.04487,0.6497,0.06485,0.5656,0.0663,0.2777,0.05068,0.6897,0.01842,0.2049,0.04695,0,15,2000
+fight cost 3,20,491.4,0.3591,0.04413,0.5374,0.06294,0.5295,0.06352,0.337,0.05324,0.7054,0.01293,0.09743,0.02156,0,18,2000
+no farms level 1,20,0,,,,,,,,,,,,,20,0,90
+no farms level 2,20,0,,,,,,,,,,,,,20,0,125
+no farms level 3,20,0,,,,,,,,,,,,,20,0,255
+no farms level 4,20,3.948,0.6002,0.1734,0.6084,0.234,0.5769,0.1958,0.4021,0.2433,0.6045,0.2318,,,14,0,1510
+no farms level 5,20,38.06,0.5115,0.08944,0.5216,0.09303,0.4946,0.09264,0.5427,0.08765,0.4344,0.06404,0,,0,14,2000

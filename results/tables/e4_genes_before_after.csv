@@ -1,0 +1,6 @@
+gene,plenty_then_scarcity_before,plenty_then_scarcity_after,plenty_then_scarcity_after_ci,scarcity_then_plenty_before,scarcity_then_plenty_after,scarcity_then_plenty_after_ci,always_plenty_before,always_plenty_after,always_plenty_after_ci,always_scarcity_before,always_scarcity_after,always_scarcity_after_ci,plenty_then_scarcity_vs_target_p,scarcity_then_plenty_vs_target_p
+exploratory_tendency,0.4994,0.5849,0.08403,0.5898,0.5815,0.05951,0.4994,0.4891,0.02516,0.5898,0.6202,0.07233,0.5169,0.005677
+risk_tolerance,0.5284,0.6124,0.08764,0.5727,0.5641,0.05063,0.5284,0.5245,0.03189,0.5727,0.6116,0.06213,0.988,0.1817
+sociability,0.4785,0.4757,0.0705,0.4697,0.4723,0.06768,0.4785,0.4772,0.01982,0.4697,0.4588,0.07719,0.7428,0.8873
+cooperative_tendency,0.4974,0.4905,0.08973,0.4879,0.4837,0.06929,0.4974,0.486,0.03052,0.4879,0.4739,0.07587,0.7738,0.9511
+farming_tendency,0.6879,0.4892,0.02803,0.3763,0.6335,0.01541,0.6879,0.7163,0.005366,0.3763,0.3777,0.02061,2.513e-08,2.39e-12

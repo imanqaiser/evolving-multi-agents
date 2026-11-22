@@ -1,0 +1,13 @@
+condition,window,population
+plenty then scarcity,before,1097
+plenty then scarcity,200 steps after,89.53
+plenty then scarcity,end,61.68
+scarcity then plenty,before,92.75
+scarcity then plenty,200 steps after,673.2
+scarcity then plenty,end,758.9
+always plenty,before,1097
+always plenty,200 steps after,1097
+always plenty,end,1107
+always scarcity,before,92.75
+always scarcity,200 steps after,93.27
+always scarcity,end,88.83

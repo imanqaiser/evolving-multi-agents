@@ -138,7 +138,7 @@ def level_axis(axis, label=True):
 
 # The average of each run's last FINAL_WINDOW rows: one row per run.
 def final_rows(data, keys, steps=STEPS):
-    late = data[data["Timestep"] > steps - FINAL_WINDOW]
+    late = data[(data["Timestep"] > steps - FINAL_WINDOW) & (data["Timestep"] <= steps)]
     return late.groupby(keys, as_index=False).mean(numeric_only=True)
 
 
@@ -460,9 +460,9 @@ def figure_e3():
         axis.set_ylim(0, 1)
         axis.set_xlabel("Timestep")
     axes[0].set_ylabel("Plenty veterans' share\nof all agents")
-    axes[0].legend(loc="lower left")
+    axes[2].legend(loc="lower left")
     axes[0].text(40, 0.96, "plenty veterans dominate ↑", fontsize=12, color="#374151", va="top")
-    axes[0].text(40, 0.2, "scarcity veterans dominate ↓", fontsize=12, color="#374151", va="bottom")
+    axes[0].text(40, 0.03, "scarcity veterans dominate ↓", fontsize=12, color="#374151", va="bottom")
     figure.suptitle("E3. Veterans of plenty and veterans of scarcity in a shared world "
                     "(mean and 95% band across 30 runs)", fontsize=18)
     figure.tight_layout()
@@ -568,7 +568,7 @@ def figure_e4():
     axes[5].set_title("Population size (both populations)")
     axes[5].set_ylabel("agents")
     axes[5].set_ylim(bottom=0)
-    axes[5].legend(loc="center left", fontsize=11)
+    axes[5].legend(loc="lower left", bbox_to_anchor=(0.01, 0.16), fontsize=10.5)
     axes[0].text(STEPS + 40, 0.03, "environment switches", fontsize=12, color="#111827")
     for axis in axes[3:]:
         axis.set_xlabel("Timestep")
@@ -593,8 +593,8 @@ def figure_e4():
             row[f"{name}_after_ci"] = half
         for shocked, target in [("plenty then scarcity", "always scarcity"),
                                 ("scarcity then plenty", "always plenty")]:
-            first = after[after["condition"] == shocked][column]
-            second = after[after["condition"] == target][column]
+            first = after[after["condition"] == shocked][column].dropna()
+            second = after[after["condition"] == target][column].dropna()
             row[f"{shocked.replace(' ', '_')}_vs_target_p"] = stats.ttest_ind(first, second, equal_var=False).pvalue
         rows.append(row)
     save_table(pd.DataFrame(rows), "e4_genes_before_after.csv")
@@ -606,16 +606,32 @@ def figure_e4():
         merged[f"change {gene}"] = merged[f"gene {gene}_after"] - merged[f"gene {gene}_before"]
         for shocked, control in [("plenty then scarcity", "always plenty"),
                                  ("scarcity then plenty", "always scarcity")]:
-            first = merged[merged["condition"] == shocked][f"change {gene}"]
-            second = merged[merged["condition"] == control][f"change {gene}"]
+            first = merged[merged["condition"] == shocked][f"change {gene}"].dropna()
+            second = merged[merged["condition"] == control][f"change {gene}"].dropna()
             test = stats.ttest_ind(first, second, equal_var=False)
             interval = test.confidence_interval(0.95)
-            rows.append({"gene": gene, "shock": shocked, "change_with_shock": first.mean(),
+            rows.append({"gene": gene, "shock": shocked, "n_with_shock": len(first),
+                         "change_with_shock": first.mean(),
                          "change_without_shock": second.mean(),
                          "difference": first.mean() - second.mean(), "difference_low": interval.low,
                          "difference_high": interval.high, "cohens_d": cohens_d(first, second),
                          "p_value": test.pvalue})
     save_table(pd.DataFrame(rows), "e4_shock_effect.csv")
+    # How fast does the farming gene move after the switch? Average by time since the shock.
+    rows = []
+    for condition in styles:
+        runs = data[data["condition"] == condition]
+        row = {"condition": condition}
+        for step in [2000, 2050, 2100, 2200, 2400, 2700, 3000, 3500, 4000]:
+            row[f"t{step}"] = runs[runs["Timestep"] == step]["gene farming_tendency"].mean()
+        rows.append(row)
+    save_table(pd.DataFrame(rows), "e4_farming_over_time.csv")
+    ends = data[data["Timestep"] == 2 * STEPS]
+    died = ends[ends["Total population"] == 0].groupby("condition").size().reindex(list(styles), fill_value=0)
+    one_left = ends[(ends["Population A"] == 0) != (ends["Population B"] == 0)].groupby("condition").size()
+    save_table(pd.DataFrame({"condition": list(styles), "runs_everyone_died": died.values,
+                             "runs_one_population_died": one_left.reindex(list(styles), fill_value=0).values}),
+               "e4_extinctions.csv")
     sizes = []
     for condition in styles:
         runs = data[data["condition"] == condition]
@@ -726,6 +742,10 @@ def figure_stretch():
             rates.append((last["Cumulative fights"] - first["Cumulative fights"]) / encounters
                          if encounters else np.nan)
         row["fights_per_encounter"], row["fights_per_encounter_ci"], _ = mean_ci(rates)
+        last = runs[runs["Timestep"] == STEPS]
+        row["runs_everyone_died"] = int((last["Total population"] == 0).sum())
+        row["runs_both_populations_alive"] = int(((last["Population A"] > 0) & (last["Population B"] > 0)).sum())
+        row["median_last_step_alive"] = runs[runs["Total population"] > 0].groupby("seed")["Timestep"].max().median()
         rows.append(row)
     table = pd.DataFrame(rows)
     save_table(table, "stretch.csv")

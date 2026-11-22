@@ -1,0 +1,11 @@
+gene,shock,n_with_shock,change_with_shock,change_without_shock,difference,difference_low,difference_high,cohens_d,p_value
+exploratory_tendency,plenty then scarcity,29,0.08221,-0.01033,0.09253,0.01427,0.1708,0.6393,0.02206
+exploratory_tendency,scarcity then plenty,30,-0.008286,0.0304,-0.03868,-0.08199,0.004626,-0.4673,0.07846
+risk_tolerance,plenty then scarcity,29,0.08424,-0.003973,0.08822,0.0009259,0.1755,0.5465,0.04777
+risk_tolerance,scarcity then plenty,30,-0.008591,0.03892,-0.04751,-0.09639,0.001366,-0.5089,0.0564
+sociability,plenty then scarcity,29,-0.00331,-0.0013,-0.00201,-0.07218,0.06816,-0.01546,0.9538
+sociability,scarcity then plenty,30,0.00262,-0.01085,0.01347,-0.03002,0.05697,0.1614,0.5353
+cooperative_tendency,plenty then scarcity,29,-0.01086,-0.01144,0.0005863,-0.08933,0.0905,0.00353,0.9895
+cooperative_tendency,scarcity then plenty,30,-0.004142,-0.01395,0.009812,-0.02974,0.04937,0.1293,0.6192
+farming_tendency,plenty then scarcity,29,-0.1986,0.02832,-0.2269,-0.2553,-0.1984,-4.288,3.091e-17
+farming_tendency,scarcity then plenty,30,0.2572,0.001382,0.2558,0.2253,0.2863,4.343,2.565e-23

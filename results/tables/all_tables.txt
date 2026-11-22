@@ -1,0 +1,221 @@
+Saved figures/e1_selection_vs_neutral.png
+
+--- e1_final_genes.csv ---
+                gene  selection_mean  selection_ci  neutral_mean  neutral_ci  difference  difference_low  difference_high  cohens_d  p_value  n_selection  n_neutral
+exploratory_tendency           0.544         0.034         0.511       0.030       0.034          -0.011            0.078     0.394    0.133           30         30
+      risk_tolerance           0.509         0.031         0.499       0.032       0.010          -0.034            0.054     0.115    0.659           30         30
+         sociability           0.490         0.029         0.509       0.027      -0.018          -0.057            0.020    -0.246    0.344           30         30
+cooperative_tendency           0.499         0.034         0.511       0.023      -0.012          -0.052            0.028    -0.151    0.561           30         30
+    farming_tendency           0.646         0.012         0.498       0.027       0.149           0.120            0.178     2.690    0.000           30         30
+
+--- e1_population_size.csv ---
+condition    mean    std  count
+  neutral 406.020 67.789     30
+selection 408.600 79.958     30
+Saved figures/e2_genes_by_level.png
+
+--- e2_final_genes.csv ---
+                gene  level  mean    ci  n
+exploratory_tendency      1 0.590 0.065 30
+exploratory_tendency      2 0.397 0.035 30
+exploratory_tendency      3 0.544 0.034 30
+exploratory_tendency      4 0.509 0.029 30
+exploratory_tendency      5 0.499 0.026 30
+      risk_tolerance      1 0.573 0.055 30
+      risk_tolerance      2 0.646 0.053 30
+      risk_tolerance      3 0.509 0.031 30
+      risk_tolerance      4 0.493 0.028 30
+      risk_tolerance      5 0.528 0.026 30
+         sociability      1 0.470 0.073 30
+         sociability      2 0.552 0.048 30
+         sociability      3 0.490 0.029 30
+         sociability      4 0.501 0.029 30
+         sociability      5 0.479 0.018 30
+cooperative_tendency      1 0.488 0.070 30
+cooperative_tendency      2 0.287 0.046 30
+cooperative_tendency      3 0.499 0.034 30
+cooperative_tendency      4 0.496 0.028 30
+cooperative_tendency      5 0.497 0.027 30
+    farming_tendency      1 0.376 0.022 30
+    farming_tendency      2 0.692 0.013 30
+    farming_tendency      3 0.646 0.012 30
+    farming_tendency      4 0.680 0.011 30
+    farming_tendency      5 0.688 0.010 30
+
+--- e2_gene_scarcity_effect.csv ---
+                gene  scarcest  most_plentiful  difference  difference_low  difference_high  cohens_d  p_value  trend_spearman  trend_p
+exploratory_tendency     0.590           0.499      -0.090          -0.159           -0.022    -0.687    0.011          -0.040    0.623
+      risk_tolerance     0.573           0.528      -0.044          -0.105            0.016    -0.382    0.146          -0.244    0.003
+         sociability     0.470           0.479       0.009          -0.066            0.084     0.062    0.813          -0.138    0.092
+cooperative_tendency     0.488           0.497       0.010          -0.065            0.084     0.067    0.795           0.205    0.012
+    farming_tendency     0.376           0.688       0.312           0.288            0.335     6.910    0.000           0.521    0.000
+
+--- e2_genes_vs_neutral.csv ---
+ level                 gene  selection  neutral  difference  difference_low  difference_high  cohens_d  p_value  n_selection  n_neutral
+     1 exploratory_tendency      0.590    0.523       0.067          -0.035            0.169     0.350    0.192           30         28
+     1       risk_tolerance      0.573    0.521       0.052          -0.047            0.150     0.281    0.297           30         28
+     1          sociability      0.470    0.565      -0.095          -0.207            0.017    -0.451    0.093           30         28
+     1 cooperative_tendency      0.488    0.462       0.026          -0.089            0.141     0.119    0.654           30         28
+     1     farming_tendency      0.376    0.514      -0.138          -0.241           -0.034    -0.736    0.011           30         28
+     2 exploratory_tendency      0.397    0.497      -0.100          -0.153           -0.047    -0.968    0.000           30         30
+     2       risk_tolerance      0.646    0.493       0.153           0.087            0.219     1.203    0.000           30         30
+     2          sociability      0.552    0.513       0.039          -0.023            0.101     0.324    0.215           30         30
+     2 cooperative_tendency      0.287    0.489      -0.202          -0.261           -0.143    -1.773    0.000           30         30
+     2     farming_tendency      0.692    0.477       0.216           0.169            0.262     2.424    0.000           30         30
+     3 exploratory_tendency      0.544    0.511       0.034          -0.011            0.078     0.394    0.133           30         30
+     3       risk_tolerance      0.509    0.499       0.010          -0.034            0.054     0.115    0.659           30         30
+     3          sociability      0.490    0.509      -0.018          -0.057            0.020    -0.246    0.344           30         30
+     3 cooperative_tendency      0.499    0.511      -0.012          -0.052            0.028    -0.151    0.561           30         30
+     3     farming_tendency      0.646    0.498       0.149           0.120            0.178     2.690    0.000           30         30
+     4 exploratory_tendency      0.509    0.492       0.017          -0.025            0.059     0.213    0.414           30         30
+     4       risk_tolerance      0.493    0.502      -0.009          -0.049            0.030    -0.122    0.638           30         30
+     4          sociability      0.501    0.525      -0.024          -0.062            0.014    -0.330    0.206           30         30
+     4 cooperative_tendency      0.496    0.527      -0.031          -0.069            0.007    -0.417    0.111           30         30
+     4     farming_tendency      0.680    0.532       0.148           0.117            0.178     2.516    0.000           30         30
+     5 exploratory_tendency      0.499    0.497       0.002          -0.036            0.040     0.026    0.919           30         30
+     5       risk_tolerance      0.528    0.499       0.030          -0.009            0.069     0.399    0.128           30         30
+     5          sociability      0.479    0.495      -0.016          -0.044            0.012    -0.296    0.257           30         30
+     5 cooperative_tendency      0.497    0.507      -0.009          -0.045            0.026    -0.137    0.597           30         30
+     5     farming_tendency      0.688    0.493       0.195           0.164            0.226     3.318    0.000           30         30
+Saved figures/e2_behaviour_by_level.png
+
+--- e2_behaviour.csv ---
+ level  multiplier  runs_with_extinction  median_encounters  runs_with_20_meetings  population_size  population_size_ci  starvation_share  starvation_share_ci  starved_per_1000  starved_per_1000_ci  cooperate_rate  cooperate_rate_ci  fights_per_encounter  fights_per_encounter_ci  raid_rate  raid_rate_ci  avoid_rate  avoid_rate_ci  farms_per_agent  farms_per_agent_ci  stolen_per_agent  stolen_per_agent_ci  encounters_per_agent  encounters_per_agent_ci
+     1       0.600                 3.000             40.500                     19           92.335              12.047             0.151                0.009             3.263                0.207           0.405              0.063                 0.076                    0.033      0.597         0.104       0.492          0.105            2.167               0.037             0.265                0.140                 0.132                    0.075
+     2       1.000                 5.000           6959.500                     30          493.708               9.077             0.205                0.013             4.631                0.369           0.246              0.031                 0.207                    0.043      0.764         0.038       0.442          0.045            1.192               0.023             2.892                0.472                 1.343                    0.250
+     3       1.600                 0.000              0.000                      1          408.652              29.853             0.122                0.003             2.538                0.056             NaN                NaN                   NaN                      NaN        NaN           NaN         NaN            NaN            0.595               0.003             0.012                0.025                 0.013                    0.026
+     4       2.500                 0.000              0.000                      1          675.778              44.548             0.120                0.002             2.497                0.045             NaN                NaN                   NaN                      NaN        NaN           NaN         NaN            NaN            0.366               0.001             0.012                0.024                 0.019                    0.038
+     5       4.000                 0.000              0.000                      2         1093.971              80.783             0.092                0.002             1.897                0.049             NaN                NaN                   NaN                      NaN        NaN           NaN         NaN            NaN            0.228               0.001             0.027                0.038                 0.040                    0.057
+
+--- e2_behaviour_scarcity_effect.csv ---
+             measure  scarcest  most_plentiful  difference  cohens_d  p_value  trend_spearman  trend_p
+     farms_per_agent     2.167           0.228      -1.939   -27.347    0.000          -0.980    0.000
+    stolen_per_agent     0.265           0.027      -0.238    -0.869    0.002          -0.643    0.000
+    starvation_share     0.151           0.092      -0.059    -3.385    0.000          -0.797    0.000
+    starved_per_1000     3.263           1.897      -1.366    -3.396    0.000          -0.817    0.000
+encounters_per_agent     0.132           0.040      -0.092    -0.515    0.051          -0.632    0.000
+
+--- e2_behaviour_level1_vs_level2.csv ---
+             measure  level_1  n_1  level_2  n_2  difference  difference_low  difference_high  cohens_d  p_value
+      cooperate_rate    0.405   19    0.246   30      -0.159          -0.228           -0.091    -1.538    0.000
+fights_per_encounter    0.076   19    0.207   30       0.131           0.078            0.184     1.306    0.000
+           raid_rate    0.597   16    0.764   30       0.167           0.058            0.276     1.183    0.005
+          avoid_rate    0.492   17    0.442   30      -0.049          -0.161            0.063    -0.318    0.372
+    stolen_per_agent    0.265   30    2.892   30       2.626           2.137            3.116     2.816    0.000
+encounters_per_agent    0.132   30    1.343   30       1.211           0.951            1.470     2.447    0.000
+Saved figures/e3_share_over_time.png
+Saved figures/e3_outcome_by_level.png
+
+--- e3_outcome.csv ---
+    mode  level  plenty_share    ci  n  p_vs_half  plenty_larger  scarcity_larger  sign_test_p  plenty_extinct  scarcity_extinct  share_when_plenty_on_top  share_when_plenty_on_bottom  plenty_size  scarcity_size
+evolving      1         0.415 0.092 30      0.069              9               21        0.043               0                 1                     0.426                        0.405       36.470         57.153
+evolving      2         0.542 0.123 30      0.488             20               10        0.099               1                 4                     0.556                        0.528      268.938        227.233
+evolving      3         0.480 0.030 30      0.187             13               17        0.585               0                 0                     0.489                        0.471      195.920        211.178
+evolving      4         0.472 0.035 30      0.112             10               20        0.099               0                 0                     0.470                        0.474      321.365        353.998
+evolving      5         0.471 0.029 30      0.045             11               19        0.200               0                 0                     0.462                        0.479      516.023        574.133
+  frozen      1         0.204 0.075 30      0.000              2               28        0.000              11                 0                     0.247                        0.162       16.398         61.693
+  frozen      2         0.521 0.097 30      0.653             16               14        0.856               2                 1                     0.422                        0.621      253.535        229.672
+  frozen      3         0.483 0.035 30      0.337             13               17        0.585               0                 0                     0.490                        0.476      188.497        201.030
+  frozen      4         0.488 0.031 30      0.417             15               15        1.000               0                 0                     0.485                        0.490      319.303        334.835
+  frozen      5         0.481 0.028 30      0.183             15               15        1.000               0                 0                     0.481                        0.481      508.083        543.663
+
+--- e3_founding_genes.csv ---
+                gene  plenty_veterans  scarcity_veterans  difference    ci  n
+exploratory_tendency            0.496              0.551      -0.055 0.080 30
+      risk_tolerance            0.527              0.570      -0.043 0.086 30
+         sociability            0.467              0.500      -0.033 0.095 30
+cooperative_tendency            0.516              0.460       0.056 0.093 30
+    farming_tendency            0.693              0.392       0.301 0.038 30
+Saved figures/e4_shock.png
+
+--- e4_genes_before_after.csv ---
+                gene  plenty_then_scarcity_before  plenty_then_scarcity_after  plenty_then_scarcity_after_ci  scarcity_then_plenty_before  scarcity_then_plenty_after  scarcity_then_plenty_after_ci  always_plenty_before  always_plenty_after  always_plenty_after_ci  always_scarcity_before  always_scarcity_after  always_scarcity_after_ci  plenty_then_scarcity_vs_target_p  scarcity_then_plenty_vs_target_p
+exploratory_tendency                        0.499                       0.585                          0.084                        0.590                       0.582                          0.060                 0.499                0.489                   0.025                   0.590                  0.620                     0.072                             0.517                             0.006
+      risk_tolerance                        0.528                       0.612                          0.088                        0.573                       0.564                          0.051                 0.528                0.524                   0.032                   0.573                  0.612                     0.062                             0.988                             0.182
+         sociability                        0.479                       0.476                          0.070                        0.470                       0.472                          0.068                 0.479                0.477                   0.020                   0.470                  0.459                     0.077                             0.743                             0.887
+cooperative_tendency                        0.497                       0.490                          0.090                        0.488                       0.484                          0.069                 0.497                0.486                   0.031                   0.488                  0.474                     0.076                             0.774                             0.951
+    farming_tendency                        0.688                       0.489                          0.028                        0.376                       0.634                          0.015                 0.688                0.716                   0.005                   0.376                  0.378                     0.021                             0.000                             0.000
+
+--- e4_shock_effect.csv ---
+                gene                shock  n_with_shock  change_with_shock  change_without_shock  difference  difference_low  difference_high  cohens_d  p_value
+exploratory_tendency plenty then scarcity            29              0.082                -0.010       0.093           0.014            0.171     0.639    0.022
+exploratory_tendency scarcity then plenty            30             -0.008                 0.030      -0.039          -0.082            0.005    -0.467    0.078
+      risk_tolerance plenty then scarcity            29              0.084                -0.004       0.088           0.001            0.176     0.546    0.048
+      risk_tolerance scarcity then plenty            30             -0.009                 0.039      -0.048          -0.096            0.001    -0.509    0.056
+         sociability plenty then scarcity            29             -0.003                -0.001      -0.002          -0.072            0.068    -0.015    0.954
+         sociability scarcity then plenty            30              0.003                -0.011       0.013          -0.030            0.057     0.161    0.535
+cooperative_tendency plenty then scarcity            29             -0.011                -0.011       0.001          -0.089            0.091     0.004    0.989
+cooperative_tendency scarcity then plenty            30             -0.004                -0.014       0.010          -0.030            0.049     0.129    0.619
+    farming_tendency plenty then scarcity            29             -0.199                 0.028      -0.227          -0.255           -0.198    -4.288    0.000
+    farming_tendency scarcity then plenty            30              0.257                 0.001       0.256           0.225            0.286     4.343    0.000
+
+--- e4_farming_over_time.csv ---
+           condition  t2000  t2050  t2100  t2200  t2400  t2700  t3000  t3500  t4000
+plenty then scarcity  0.690  0.645  0.643  0.628  0.585  0.565  0.545  0.511  0.486
+scarcity then plenty  0.371  0.380  0.384  0.396  0.426  0.476  0.523  0.589  0.644
+       always plenty  0.690  0.691  0.691  0.694  0.701  0.704  0.706  0.712  0.718
+     always scarcity  0.371  0.374  0.374  0.376  0.376  0.371  0.384  0.377  0.375
+
+--- e4_extinctions.csv ---
+           condition  runs_everyone_died  runs_one_population_died
+plenty then scarcity                   1                        11
+scarcity then plenty                   0                         3
+       always plenty                   0                         0
+     always scarcity                   0                         6
+
+--- e4_population_size.csv ---
+           condition          window  population
+plenty then scarcity          before    1097.007
+plenty then scarcity 200 steps after      89.527
+plenty then scarcity             end      61.675
+scarcity then plenty          before      92.752
+scarcity then plenty 200 steps after     673.232
+scarcity then plenty             end     758.923
+       always plenty          before    1097.007
+       always plenty 200 steps after    1097.118
+       always plenty             end    1106.850
+     always scarcity          before      92.752
+     always scarcity 200 steps after      93.268
+     always scarcity             end      88.828
+Saved figures/e5_gene_vs_offspring.png
+
+--- e5_selection_by_level.csv ---
+                gene  level  spearman  spearman_ci  p_vs_zero  regression  regression_ci  n  agents_per_run  gene_std  mean_offspring
+exploratory_tendency      1     0.004        0.005      0.149       0.010          0.012 30        4018.067     0.248           1.976
+exploratory_tendency      2    -0.013        0.002      0.000      -0.015          0.003 30       20636.067     0.225           2.006
+exploratory_tendency      3     0.001        0.002      0.253       0.001          0.002 30       16648.467     0.275           2.002
+exploratory_tendency      4    -0.000        0.002      0.886      -0.000          0.002 30       27323.300     0.276           2.007
+exploratory_tendency      5     0.001        0.002      0.228       0.000          0.002 30       43542.567     0.284           2.011
+      risk_tolerance      1     0.003        0.005      0.231       0.009          0.010 30        4018.067     0.259           1.976
+      risk_tolerance      2     0.007        0.003      0.000       0.008          0.004 30       20636.067     0.287           2.006
+      risk_tolerance      3    -0.000        0.002      0.743      -0.000          0.002 30       16648.467     0.288           2.002
+      risk_tolerance      4    -0.001        0.002      0.087      -0.002          0.002 30       27323.300     0.285           2.007
+      risk_tolerance      5     0.000        0.002      0.887       0.001          0.002 30       43542.567     0.288           2.011
+         sociability      1    -0.002        0.006      0.577       0.008          0.012 30        4018.067     0.260           1.976
+         sociability      2     0.003        0.003      0.036       0.004          0.004 30       20636.067     0.285           2.006
+         sociability      3    -0.001        0.002      0.246      -0.000          0.003 30       16648.467     0.289           2.002
+         sociability      4    -0.000        0.002      0.598       0.000          0.002 30       27323.300     0.291           2.007
+         sociability      5    -0.000        0.001      0.719      -0.001          0.002 30       43542.567     0.292           2.011
+cooperative_tendency      1     0.001        0.005      0.841      -0.004          0.012 30        4018.067     0.255           1.976
+cooperative_tendency      2    -0.012        0.002      0.000      -0.016          0.004 30       20636.067     0.278           2.006
+cooperative_tendency      3    -0.001        0.002      0.240       0.001          0.002 30       16648.467     0.288           2.002
+cooperative_tendency      4    -0.001        0.002      0.252       0.000          0.002 30       27323.300     0.285           2.007
+cooperative_tendency      5    -0.000        0.002      0.607      -0.000          0.001 30       43542.567     0.289           2.011
+    farming_tendency      1    -0.006        0.005      0.013      -0.025          0.010 30        4018.067     0.148           1.976
+    farming_tendency      2     0.017        0.003      0.000       0.026          0.004 30       20636.067     0.151           2.006
+    farming_tendency      3     0.006        0.002      0.000       0.021          0.003 30       16648.467     0.189           2.002
+    farming_tendency      4     0.004        0.002      0.001       0.019          0.002 30       27323.300     0.188           2.007
+    farming_tendency      5     0.004        0.002      0.001       0.016          0.002 30       43542.567     0.189           2.011
+
+--- stretch.csv ---
+       condition  n  population  exploratory_tendency  exploratory_tendency_ci  risk_tolerance  risk_tolerance_ci  sociability  sociability_ci  cooperative_tendency  cooperative_tendency_ci  farming_tendency  farming_tendency_ci  fights_per_encounter  fights_per_encounter_ci  runs_everyone_died  runs_both_populations_alive  median_last_step_alive
+    fight cost 0 20     502.403                 0.425                    0.045           0.776              0.053        0.620           0.067                 0.213                    0.058             0.692                0.023                 0.496                    0.077                   0                           16                2000.000
+  fight cost 0.5 20     498.857                 0.416                    0.054           0.692              0.055        0.560           0.065                 0.231                    0.060             0.687                0.019                 0.306                    0.060                   0                           14                2000.000
+  fight cost 1.5 20     496.980                 0.408                    0.045           0.650              0.065        0.566           0.066                 0.278                    0.051             0.690                0.018                 0.205                    0.047                   0                           15                2000.000
+    fight cost 3 20     491.425                 0.359                    0.044           0.537              0.063        0.529           0.064                 0.337                    0.053             0.705                0.013                 0.097                    0.022                   0                           18                2000.000
+no farms level 1 20       0.000                   NaN                      NaN             NaN                NaN          NaN             NaN                   NaN                      NaN               NaN                  NaN                   NaN                      NaN                  20                            0                  90.000
+no farms level 2 20       0.000                   NaN                      NaN             NaN                NaN          NaN             NaN                   NaN                      NaN               NaN                  NaN                   NaN                      NaN                  20                            0                 125.000
+no farms level 3 20       0.000                   NaN                      NaN             NaN                NaN          NaN             NaN                   NaN                      NaN               NaN                  NaN                   NaN                      NaN                  20                            0                 255.000
+no farms level 4 20       3.948                 0.600                    0.173           0.608              0.234        0.577           0.196                 0.402                    0.243             0.604                0.232                   NaN                      NaN                  14                            0                1510.000
+no farms level 5 20      38.057                 0.512                    0.089           0.522              0.093        0.495           0.093                 0.543                    0.088             0.434                0.064                 0.000                      NaN                   0                           14                2000.000
+Saved figures/stretch_fight_cost.png

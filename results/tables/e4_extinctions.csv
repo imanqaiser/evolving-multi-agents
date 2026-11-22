@@ -1,0 +1,5 @@
+condition,runs_everyone_died,runs_one_population_died
+plenty then scarcity,1,11
+scarcity then plenty,0,3
+always plenty,0,0
+always scarcity,0,6
