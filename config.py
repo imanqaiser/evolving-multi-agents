@@ -111,3 +111,87 @@ STARTING_AGENTS = [
     ("B1", (2, 0), 0.7),
     ("B2", (2, 2), 0.9),
 ]
+
+
+# ---------------------------------------------------------------------------
+# Model 2 (see DESIGN.md, "Model 2"). Every new mechanic sits behind a switch.
+# With the defaults below every switch is off and the model is exactly Model 1.
+# SocietyModel(..., version=2) turns them all on by applying MODEL_2 (at the
+# end of this section) as overrides.
+# ---------------------------------------------------------------------------
+# 1. Two body genes with built-in costs.
+BODY_GENES = False
+BODY_GENE_NAMES = ["vision", "body_size"]
+VISION_MIN_RADIUS = 1   # vision gene 0 sees 1 cell in every direction (as in Model 1) ...
+VISION_MAX_RADIUS = 4   # ... and vision gene 1 sees 4 cells.
+VISION_COST = 0.0       # Extra living cost per timestep for each cell of sight radius above 1.
+BODY_COST = 0.0         # Extra living cost per timestep for body_size 1 (in proportion below that).
+BODY_BASE = 0.5         # Strength = BODY_BASE + body_size: the largest agent is 3 times as strong as the smallest.
+
+# 2. Explicit fitness and fitness-based selection.
+#   "endogenous"  Model 1: partners pair up in random order
+#   "fitness"     Model 2: an agent picks its partner by a tournament on fitness
+#   "neutral"     control: behaviour ignores the genes and partners are picked at random
+SELECTION_MODE = "endogenous"
+TOURNAMENT_SIZE = 3
+
+# 3. Soil that wears out. Fertility (0 to 1) multiplies a farm's growth.
+SOIL_ENABLED = False
+SOIL_DEPLETION = 0.0    # Fertility lost each timestep a farm is harvested.
+SOIL_RECOVERY = 0.0     # Fertility regained each timestep the cell is not harvested.
+
+# 4. Cooperation that can pay: when both agents cooperate, each gains TRADE_BONUS.
+TRADE_BONUS = 0.0
+TRADE_COOLDOWN = 5      # An agent can collect a trade bonus at most once in this many timesteps.
+
+# Documented fallback for Gate 1 (not used unless the gate needs it): start
+# both populations mixed over the whole grid instead of in separate halves.
+INTERLEAVED_START = False
+
+# PROPOSAL under test, off by default (None): homelands with a shared border
+# zone. See SocietyModel.may_enter(). A number is the width of the zone, in
+# rows, that each population may enter on the other side of the middle line.
+HOMELAND_BAND = None
+
+# 5. Model 2's own abundance scale: seven levels on a ratio scale.
+# PLACEHOLDER values until calibration (experiments/m_calibrate.py) freezes them.
+M2_MULTIPLIERS = {1: 1.0, 2: 1.4, 3: 2.0, 4: 2.8, 5: 4.0, 6: 5.6, 7: 8.0}
+M2_NAMED_LEVELS = {"SCARCE": 1, "MIDDLE": 4, "PLENTIFUL": 7}
+
+for _level, _multiplier in M2_MULTIPLIERS.items():
+    ENVIRONMENTS[f"M2_LEVEL_{_level}"] = make_environment(MIDDLE_LEVEL)
+    ENVIRONMENTS[f"M2_LEVEL_{_level}"].update(
+        level=_level, multiplier=_multiplier, regeneration=BASE_REGENERATION * _multiplier,
+        farm_growth=BASE_FARM_GROWTH * _multiplier,
+        patches=[(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)])
+for _name, _level in M2_NAMED_LEVELS.items():
+    ENVIRONMENTS[f"M2_{_name}"] = ENVIRONMENTS[f"M2_LEVEL_{_level}"]
+
+
+# Model 2 version of environment_name(): a level number 1-7, "SCARCE",
+# "MIDDLE", "PLENTIFUL", or a full name such as "M2_LEVEL_3".
+def model2_environment_name(name_or_level):
+    if isinstance(name_or_level, int):
+        return f"M2_LEVEL_{name_or_level}"
+    if name_or_level in M2_NAMED_LEVELS:
+        return f"M2_LEVEL_{M2_NAMED_LEVELS[name_or_level]}"
+    if name_or_level in ("ABUNDANT", "LEVEL_5"):   # The dashboard's default name.
+        return f"M2_LEVEL_{M2_NAMED_LEVELS['MIDDLE']}"
+    return name_or_level
+
+
+# Everything version=2 switches on. PLACEHOLDER numbers until calibration.
+MODEL_2 = {
+    "BODY_GENES": True,
+    "VISION_COST": 0.05,
+    "BODY_COST": 0.2,
+    "SELECTION_MODE": "fitness",
+    "MATING_RADIUS": 3,
+    "REPRODUCTION_THRESHOLD": 6.0,
+    "REPRODUCTION_COST_PER_PARENT": 3.0,
+    "CHILD_STARTING_RESOURCES": 6.0,
+    "SOIL_ENABLED": True,
+    "SOIL_DEPLETION": 0.02,
+    "SOIL_RECOVERY": 0.01,
+    "TRADE_BONUS": 0.5,
+}

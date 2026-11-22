@@ -34,6 +34,9 @@ class SocietyAgent(mesa.Agent):
         self.total_food = 0.0    # Food eaten.
         self.total_stolen = 0.0  # Taken from the other population (robberies and farm raids).
         self.total_lost = 0.0    # Robbed from this agent.
+        self.total_robbed = 0.0  # Robbed by this agent (part of total_stolen; farm raids are not).
+        self.total_trade = 0.0   # Trade bonuses collected (Model 2).
+        self.next_trade_step = 0
         self.offspring = 0       # Children produced: the agent's realized fitness.
         # A genome is a dictionary of five tendencies between 0 and 1 (config.GENES):
         #   exploratory_tendency  chance of exploring when nearby food is poor (step)
@@ -54,6 +57,11 @@ class SocietyAgent(mesa.Agent):
         else:
             # Use the given dictionary, not new random genes.
             self.genome = genome.copy()
+        # Model 2's body genes (vision, body_size). A genome from a Model 1
+        # gene pool does not have them, so they are drawn at random.
+        for trait in model.genes:
+            if trait not in self.genome:
+                self.genome[trait] = self.random.random()
         if parent_ids is not None:
             self.resources = model.param("CHILD_STARTING_RESOURCES")
             self.last_action = f"Born at {position}; first normal turn is next timestep."
@@ -63,10 +71,22 @@ class SocietyAgent(mesa.Agent):
         # in gene averages is then pure random drift, with no selection.
         if model.neutral:
             self.traits = {}
-            for trait in config.GENES:
+            for trait in model.genes:
                 self.traits[trait] = self.random.random()
         else:
             self.traits = self.genome
+        # Model 2 body: what the two body genes cost and give. Both are fixed
+        # at birth. In Model 1 the extra cost is zero and strength is not used.
+        #   body_cost  added to the living cost every timestep (finish_turn)
+        #   strength   weight in fights (confront) and in sharing a cell's food (share_food)
+        self.body_cost = 0.0
+        self.strength = 1.0
+        if model.body_genes:
+            extra_radius = (config.VISION_MAX_RADIUS - config.VISION_MIN_RADIUS) * self.traits["vision"]
+            self.body_cost = (model.param("VISION_COST") * extra_radius
+                              + model.param("BODY_COST") * self.traits["body_size"])
+            self.strength = model.param("BODY_BASE") + self.traits["body_size"]
+        self.sight_radius = config.VISION_MIN_RADIUS  # Radius used on the latest turn.
 
     # model.cell_agents is a lookup table: position → list of living agents there.
     # It lets an agent check only the nine nearby cells instead of every agent.
@@ -90,6 +110,30 @@ class SocietyAgent(mesa.Agent):
     def remove(self):
         self.model.cell_agents[self._position].remove(self)
         super().remove()
+
+    # THE FITNESS FUNCTION (Model 2; used by SocietyModel.choose_partner).
+    # Everything the agent has gathered so far in its life: food eaten, plus
+    # robbery gains, plus trade bonuses, minus what was robbed from it. It is
+    # divided by what one agent needs to stay alive for a full lifetime, so a
+    # fitness of 1 means "has gathered one lifetime's basic need". The total
+    # only grows while the agent is alive, so gathering fast and surviving
+    # long both raise it. No behaviour is rewarded directly.
+    def fitness(self):
+        gathered = self.total_food + self.total_robbed + self.total_trade - self.total_lost
+        environment = self.model.environment
+        return gathered / (environment["maximum_age"] * environment["survival_cost"])
+
+    # How far the agent sees this turn (Model 2). The vision gene maps to a
+    # radius between 1 and 4 cells. A gene value that falls between two whole
+    # radii is rounded up or down at random, in proportion: 2.3 becomes 3 on
+    # 30% of turns and 2 on 70%. So every small change in the gene matters.
+    def look_radius(self):
+        exact = config.VISION_MIN_RADIUS + (
+            (config.VISION_MAX_RADIUS - config.VISION_MIN_RADIUS) * self.traits["vision"])
+        radius = int(exact)
+        if self.random.random() < exact - radius:
+            radius += 1
+        return radius
 
     # A parent must be alive, old enough, well supplied, and off cooldown.
     def can_reproduce(self):
@@ -128,7 +172,12 @@ class SocietyAgent(mesa.Agent):
             return
         seen = []
         rival_positions = []  # Where the rivals in view are standing.
-        for agent in self.model.nearby_agents(self.position):
+        # Model 1: every agent sees one cell in each direction. Model 2: the vision gene decides.
+        radius = 1
+        if self.model.body_genes:
+            radius = self.look_radius()
+            self.sight_radius = radius
+        for agent in self.model.nearby_agents(self.position, radius):
             if agent is not self:
                 seen.append(agent.name)
                 if agent.population != self.population:
@@ -146,6 +195,8 @@ class SocietyAgent(mesa.Agent):
             destination = self.position
             reason = "stayed to tend its population's farm"
             rival_note = ""
+        elif self.model.body_genes:
+            destination, reason, rival_note = self.choose_destination_wide(radius, rival_positions)
         else:
             destination, reason, rival_note = self.choose_destination(rival_positions)
 
@@ -154,6 +205,8 @@ class SocietyAgent(mesa.Agent):
         # Chebyshev distance: moving one cell diagonally counts as one move.
         distance = max(abs(destination[0] - old_position[0]), abs(destination[1] - old_position[1]))
         self.turn_movement_cost = distance * environment["movement_cost"]
+        if distance > 0:
+            self.model.moves[self.population] += 1
         # The explanation text is only for the dashboard; batch runs skip it.
         if not self.model.headless:
             if destination != old_position:
@@ -255,6 +308,107 @@ class SocietyAgent(mesa.Agent):
 
         return destination, reason, rival_note
 
+    # Model 2 version of choose_destination(): the same four decisions, but
+    # the agent sees "radius" cells in every direction and may walk to any
+    # cell it sees, paying the movement cost for every cell of distance. So it
+    # compares cells by what they are worth after the walk: food − walking cost.
+    def choose_destination_wide(self, radius, rival_positions):
+        model = self.model
+        environment = model.environment
+        movement_cost = environment["movement_cost"]
+        row, column = self.position
+
+        # AVOID or IGNORE, exactly as in Model 1.
+        avoiding = False
+        rival_note = ""
+        if rival_positions:
+            if self.random.random() < self.traits["sociability"]:
+                model.count_action(self.population, "ignore")
+                rival_note = " Ignored the rivals in view."
+            else:
+                model.count_action(self.population, "avoid")
+                rival_note = " Kept its distance from rivals."
+                avoiding = True
+
+        # Only fertile cells can hold food, so only those need checking.
+        options = []       # (cell, distance, expected food) for every cell with food the agent may enter.
+        rival_farms = False
+        for cell in model.fertile_cells(self.position, radius):
+            food = model.food[cell]
+            if food <= 0 or not model.may_enter(self.population, cell):
+                continue
+            if avoiding and self.close_to_rival(cell, rival_positions):
+                continue
+            distance = max(abs(cell[0] - row), abs(cell[1] - column))
+            # The agent expects to share the cell equally with whoever is
+            # already standing there (agents move one at a time, so it sees
+            # where the earlier movers went).
+            others = len(model.cell_agents[cell])
+            if distance > 0:
+                food = food / (others + 1)
+            elif others > 1:
+                food = food / others
+            options.append((cell, distance, food))
+            if model.is_rival_farm(cell, self.population):
+                rival_farms = True
+
+        # RAID or RESPECT, exactly as in Model 1.
+        if rival_farms:
+            if self.random.random() < 1 - self.traits["cooperative_tendency"]:
+                model.count_action(self.population, "raid")
+                rival_note += " Willing to raid a rival farm."
+            else:
+                model.count_action(self.population, "respect")
+                rival_note += " Respected the rival farms in view."
+                allowed = []
+                for option in options:
+                    if not model.is_rival_farm(option[0], self.population):
+                        allowed.append(option)
+                options = allowed
+
+        # The best cell is the one with the most food left after walking there.
+        best_value = 0.0
+        choices = []
+        for cell, distance, food in options:
+            value = food - movement_cost * distance
+            if value > best_value:
+                best_value = value
+                choices = [cell]
+            elif value == best_value and choices:
+                choices.append(cell)
+
+        # EXPLORE or EXPLOIT. Poor means the best cell would not pay for this
+        # turn's basic survival cost. Exploring jumps to just beyond the edge
+        # of sight (radius + 1 cells away), paying for every cell.
+        poor = best_value < environment["survival_cost"]
+        far_cells = [cell for cell in self.cells_at_distance(radius + 1) if model.may_enter(self.population, cell)]
+        if poor and far_cells and self.random.random() < self.traits["exploratory_tendency"]:
+            destination = self.random.choice(far_cells)
+            reason = f"explored: the best food in view was worth only {best_value:.2f}"
+        elif choices:
+            destination = self.random.choice(choices)
+            reason = f"chose the best food in view (worth {best_value:.2f} after walking); ties are random"
+        else:
+            neighbors = []
+            for position in model.cells_around(self.position):
+                if (position != self.position and model.may_enter(self.population, position)
+                        and not (avoiding and self.close_to_rival(position, rival_positions))):
+                    neighbors.append(position)
+            if neighbors:
+                destination = self.random.choice(neighbors)
+                reason = "saw no food worth the walk, so searched a neighboring cell"
+            else:
+                destination = self.position
+                reason = "had no neighboring cell to move to"
+        return destination, reason, rival_note
+
+    # True if the cell is on or next to a rival the agent can see.
+    def close_to_rival(self, cell, rival_positions):
+        for rival_position in rival_positions:
+            if max(abs(cell[0] - rival_position[0]), abs(cell[1] - rival_position[1])) <= 1:
+                return True
+        return False
+
     # Clear what happened last turn. Called for every agent at the start of a
     # timestep, before anyone moves, because an agent can be robbed before its
     # own move.
@@ -264,25 +418,30 @@ class SocietyAgent(mesa.Agent):
         self.turn_movement_cost = 0.0
         self.turn_fight_cost = 0.0
         self.turn_stolen = 0.0  # Resources robbed from (−) or by (+) this agent.
+        self.turn_trade = 0.0   # Trade bonus collected this turn (Model 2).
         self.turn_movement_note = ""
         self.turn_food_note = ""
         self.turn_meeting_note = ""
 
     # What the agent holds right now, before this turn's food and costs.
     def current_resources(self):
-        return self.resources + self.turn_stolen - self.turn_fight_cost
+        return self.resources + self.turn_stolen - self.turn_fight_cost + self.turn_trade
 
     # Cells exactly two steps away in one of the eight directions: outside the
     # agent's view, so jumping there is a gamble.
     def cells_two_away(self):
+        return self.cells_at_distance(2)
+
+    # Cells exactly "distance" steps away in one of the eight directions.
+    def cells_at_distance(self, distance):
         row, column = self.position
         cells = []
         for row_step in [-1, 0, 1]:
             for column_step in [-1, 0, 1]:
                 if row_step == 0 and column_step == 0:
                     continue
-                target_row = row + 2 * row_step
-                target_column = column + 2 * column_step
+                target_row = row + distance * row_step
+                target_column = column + distance * column_step
                 if 0 <= target_row < self.model.grid_size and 0 <= target_column < self.model.grid_size:
                     cells.append((target_row, target_column))
         return cells
@@ -290,9 +449,11 @@ class SocietyAgent(mesa.Agent):
     # Phase 3: eat the food received in share_food(), pay costs, age, maybe die,
     # and finally work on or plant a farm.
     def finish_turn(self):
-        survival_cost = self.model.environment["survival_cost"]
+        # The living cost: the same basic survival cost for everyone, plus (in
+        # Model 2) what this agent's eyesight and body size cost to maintain.
+        survival_cost = self.model.environment["survival_cost"] + self.body_cost
         self.resources += (self.turn_food + self.turn_stolen - self.turn_movement_cost
-                           - self.turn_fight_cost - survival_cost)
+                           - self.turn_fight_cost - survival_cost) + self.turn_trade
         self.total_food += self.turn_food
         self.age += 1
 
@@ -334,6 +495,8 @@ class SocietyAgent(mesa.Agent):
             extra_text += f" − {-self.turn_stolen:.2f} stolen from it"
         if self.turn_fight_cost > 0:
             extra_text += f" − {self.turn_fight_cost:.2f} fighting"
+        if self.turn_trade > 0:
+            extra_text += f" + {self.turn_trade:.2f} trade"
         if planting_cost > 0:
             extra_text += f" − {planting_cost:.2f} planting"
         self.last_action = (
@@ -398,7 +561,7 @@ class SocietyModel(mesa.Model):
     #   record_every      headless runs save a data row every this many timesteps.
     def __init__(self, environment_name=config.DEFAULT_ENVIRONMENT, world_name=config.DEFAULT_WORLD,
                  seed=None, headless=False, neutral=False, overrides=None, gene_pools=None,
-                 frozen_genomes=False, record_every=1):
+                 frozen_genomes=False, record_every=1, version=1):
         # A seed makes Reset repeat the same sequence of random choices.
         if seed is None:
             seed = config.SEED
@@ -408,6 +571,12 @@ class SocietyModel(mesa.Model):
         self.neutral = neutral
         self.frozen_genomes = frozen_genomes
         self.record_every = record_every
+        # version=2 switches on every Model 2 mechanic (config.MODEL_2) and
+        # uses Model 2's seven abundance levels. Explicit overrides still win.
+        self.version = version
+        if version == 2:
+            overrides = {**config.MODEL_2, **(overrides or {})}
+            environment_name = config.model2_environment_name(environment_name)
         environment_name = config.environment_name(environment_name)
         self.environment_name = environment_name
         self.world_name = world_name
@@ -424,6 +593,21 @@ class SocietyModel(mesa.Model):
                 self.overrides[name] = value
             else:
                 raise ValueError(f"Unknown parameter override: {name}")
+        # How partners are chosen and whether genes steer behaviour (config.SELECTION_MODE).
+        # neutral=True is the neutral control of whichever model is running.
+        self.selection_mode = self.param("SELECTION_MODE")
+        if self.selection_mode not in ("endogenous", "fitness", "neutral"):
+            raise ValueError(f"Unknown selection mode: {self.selection_mode}")
+        if self.selection_mode == "neutral":
+            self.neutral = True
+        elif neutral and self.selection_mode == "fitness":
+            self.selection_mode = "neutral"
+        self.body_genes = self.param("BODY_GENES")
+        self.homeland_band = self.param("HOMELAND_BAND")
+        self.soil = self.param("SOIL_ENABLED")
+        self.genes = list(config.GENES)  # The genome: five genes, or seven with the body genes.
+        if self.body_genes:
+            self.genes += config.BODY_GENE_NAMES
         if self.param("CHILD_STARTING_RESOURCES") != 2 * self.param("REPRODUCTION_COST_PER_PARENT"):
             raise ValueError("Child starting resources must equal both parents' combined contributions.")
         self.grid_size = self.world["grid_size"]
@@ -451,6 +635,16 @@ class SocietyModel(mesa.Model):
             self.capacity[position] = self.environment["food_per_patch"]
         # Remember the wild capacity, so an abandoned farm can return to it.
         self.wild_capacity = self.capacity.copy()
+        # Soil (Model 2): every fertile cell has a fertility between 0 and 1
+        # that multiplies farm growth there. It belongs to the cell, so it
+        # stays when a farm is abandoned and planted again. See update_soil().
+        self.fertile = [position for position in self.capacity if self.wild_capacity[position] > 0]
+        self.fertility = dict.fromkeys(self.fertile, 1.0)
+        self.harvested = set()        # Farm cells eaten from this timestep.
+        self.fertile_cache = {}       # See fertile_cells().
+        self.moves = {"A": 0, "B": 0}       # Turns on which an agent changed cell.
+        self.trades = {"A": 0, "B": 0}      # Trade bonuses collected.
+        self.trade_created = 0.0            # Resources created by trade bonuses.
 
         # The SMALL world uses the fixed list in config. Other worlds start A in
         # the top half and B in the bottom half, with fully random genomes.
@@ -459,7 +653,10 @@ class SocietyModel(mesa.Model):
         else:
             starting_agents = []
             half = self.grid_size // 2
-            for population, first_row, last_row in [("A", 0, half), ("B", half, self.grid_size)]:
+            halves = [("A", 0, half), ("B", half, self.grid_size)]
+            if self.param("INTERLEAVED_START"):
+                halves = [("A", 0, self.grid_size), ("B", 0, self.grid_size)]
+            for population, first_row, last_row in halves:
                 for number in range(1, self.world["agents_per_population"] + 1):
                     position = (
                         self.random.randrange(first_row, last_row),
@@ -553,14 +750,16 @@ class SocietyModel(mesa.Model):
         for population in ["A", "B"]:
             for action in config.ACTIONS:
                 reporters[f"Population {population} cumulative {action}"] = f"{population}_cumulative_{action}"
-            for column in ["cumulative stolen", "starvation deaths", "old age deaths", "agent steps"]:
+            for column in ["cumulative stolen", "starvation deaths", "old age deaths", "agent steps",
+                           "moves", "trades"]:
                 reporters[f"Population {population} {column}"] = f"{population}_{column.replace(' ', '_')}"
         # Add one data column for each trait in each population.
         # A reporter string tells Mesa where to read that value on this model.
         for population in ["A", "B"]:
-            for trait in config.GENES:
+            for trait in self.genes:
                 column = f"Population {population} average {trait}"
                 reporters[column] = f"{population}_average_{trait}"
+        reporters["Average fertility"] = "average_fertility"
         self.datacollector = DataCollector(model_reporters=reporters)
         self.collect_data()
 
@@ -581,6 +780,8 @@ class SocietyModel(mesa.Model):
     # Switch to another abundance level in the middle of a run (the shock
     # experiment). The land stays the same; only the growth rates change.
     def set_environment(self, name_or_level):
+        if self.version == 2:
+            name_or_level = config.model2_environment_name(name_or_level)
         name = config.environment_name(name_or_level)
         self.environment_name = name
         for setting in ["level", "multiplier", "regeneration", "farm_growth"]:
@@ -599,6 +800,8 @@ class SocietyModel(mesa.Model):
             "lost": agent.total_lost,
             "offspring": agent.offspring,
             "cause": cause,
+            "trade": agent.total_trade,
+            "fitness": agent.fitness(),
         }
         record.update(agent.genome)
         self.lifetime_records.append(record)
@@ -621,6 +824,44 @@ class SocietyModel(mesa.Model):
             for nearby_column in range(max(0, column - radius), min(self.grid_size, column + radius + 1)):
                 cells.append((nearby_row, nearby_column))
         return cells
+
+    # Homelands (an option, off by default; see config.HOMELAND_BAND). Population
+    # A lives in the top half and B in the bottom half. Each may also enter a
+    # band of HOMELAND_BAND rows on the other side of the middle line, so the
+    # two populations share a border zone but neither can be pushed off its land.
+    def may_enter(self, population, cell):
+        band = self.homeland_band
+        if band is None:
+            return True
+        half = self.grid_size // 2
+        if population == "A":
+            return cell[0] < half + band
+        return cell[0] >= half - band
+
+    # The fertile cells within "radius" steps of a position (Model 2 sight).
+    # The land never changes, so each answer is worked out once and remembered.
+    def fertile_cells(self, position, radius):
+        key = (position, radius)
+        if key not in self.fertile_cache:
+            cells = []
+            for cell in self.cells_around(position, radius):
+                if self.wild_capacity[cell] > 0:
+                    cells.append(cell)
+            self.fertile_cache[key] = cells
+        return self.fertile_cache[key]
+
+    # Soil (Model 2), once per timestep: a farm that was eaten from loses
+    # SOIL_DEPLETION fertility; every other fertile cell regains SOIL_RECOVERY.
+    def update_soil(self):
+        depletion = self.param("SOIL_DEPLETION")
+        recovery = self.param("SOIL_RECOVERY")
+        fertility = self.fertility
+        for position in self.fertile:
+            if position in self.harvested:
+                fertility[position] = max(0.0, fertility[position] - depletion)
+            elif fertility[position] < 1.0:
+                fertility[position] = min(1.0, fertility[position] + recovery)
+        self.harvested = set()
 
     # True if the cell is a farm belonging to the other population.
     def is_rival_farm(self, position, population):
@@ -671,14 +912,23 @@ class SocietyModel(mesa.Model):
                 continue
             food = self.food[position]
             self.food[position] = 0.0
+            # Model 2: a bigger agent takes a bigger share (in proportion to strength).
+            total_strength = 0.0
+            if self.body_genes:
+                for agent in agents:
+                    total_strength += agent.strength
             for agent in agents:
-                agent.turn_food = food / len(agents)
+                if self.body_genes:
+                    agent.turn_food = food * agent.strength / total_strength
+                else:
+                    agent.turn_food = food / len(agents)
                 if len(agents) > 1 and not self.headless:
                     agent.turn_food_note += f" Split {food:.2f} food with {len(agents) - 1} other(s)."
 
             owner = self.farms.get(position)
             if owner is None or food == 0:
                 continue
+            self.harvested.add(position)  # Wears out the soil (Model 2). See update_soil().
             raiders = []
             defended = False
             for agent in agents:
@@ -720,6 +970,19 @@ class SocietyModel(mesa.Model):
                 competing.append(agent)
 
         if not competing:
+            # Model 2: both cooperated, so they trade and each gains TRADE_BONUS.
+            # This is the only place resources appear from nowhere, so it is
+            # limited: an agent collects at most one bonus per TRADE_COOLDOWN timesteps.
+            bonus = self.param("TRADE_BONUS")
+            for agent in [first, second]:
+                if bonus > 0 and self.steps >= agent.next_trade_step:
+                    agent.turn_trade += bonus
+                    agent.total_trade += bonus
+                    agent.next_trade_step = self.steps + self.param("TRADE_COOLDOWN")
+                    self.trades[agent.population] += 1
+                    self.trade_created += bonus
+                    if not self.headless:
+                        agent.turn_meeting_note += f" Traded and gained {bonus:.2f}."
             for agent in ([] if self.headless else [first, second]):
                 agent.turn_meeting_note += f" Met {first.name if agent is second else second.name} peacefully."
             return
@@ -742,7 +1005,11 @@ class SocietyModel(mesa.Model):
                 weights = []
                 for agent in fighting:
                     agent.turn_fight_cost += self.param("FIGHT_COST")
-                    weights.append(max(agent.current_resources(), 0.1))
+                    if self.body_genes:
+                        # Model 2: body size decides fights; this replaces Model 1's wealth weighting.
+                        weights.append(agent.strength)
+                    else:
+                        weights.append(max(agent.current_resources(), 0.1))
                 robber = self.random.choices(fighting, weights=weights)[0]
                 self.fights_this_step += 1
                 self.cumulative_fights += 1
@@ -756,6 +1023,7 @@ class SocietyModel(mesa.Model):
         robber.turn_stolen += amount
         victim.total_lost += amount
         robber.total_stolen += amount
+        robber.total_robbed += amount
         self.add_stolen(robber.population, amount)
         if self.headless:
             return
@@ -794,6 +1062,26 @@ class SocietyModel(mesa.Model):
             genome[trait] = max(0.0, min(1.0, value))
         return genome
 
+    # SELECTION (Model 2): an eligible agent picks its partner by tournament.
+    # TOURNAMENT_SIZE eligible agents of its own population within
+    # MATING_RADIUS are drawn at random, and the one with the highest fitness
+    # (SocietyAgent.fitness) wins. In the neutral control the tournament has
+    # size 1, so the partner is simply a random eligible neighbour.
+    def choose_partner(self, first):
+        eligible = []
+        for other in self.nearby_agents(first.position, self.param("MATING_RADIUS")):
+            if other is not first and other.population == first.population and other.can_reproduce():
+                eligible.append(other)
+        if not eligible:
+            return None
+        size = 1 if self.selection_mode == "neutral" else self.param("TOURNAMENT_SIZE")
+        entrants = self.random.sample(eligible, min(size, len(eligible)))
+        winner = entrants[0]
+        for entrant in entrants[1:]:
+            if entrant.fitness() > winner.fitness():
+                winner = entrant
+        return winner
+
     # Pair nearby eligible parents once, after normal turns have finished.
     def reproduce(self):
         # Copy before adding children. Newborns cannot join this round of pairing.
@@ -802,6 +1090,13 @@ class SocietyModel(mesa.Model):
             if agent.can_reproduce():
                 candidates.append(agent)
         self.random.shuffle(candidates)
+        if self.selection_mode != "endogenous":
+            for first in candidates:
+                if first.can_reproduce():
+                    second = self.choose_partner(first)
+                    if second is not None:
+                        self.make_child(first, second)
+            return
         # Remember each candidate's place in the shuffled list.
         order = {}
         for index in range(len(candidates)):
@@ -820,54 +1115,56 @@ class SocietyModel(mesa.Model):
                     continue
                 if second is None or order[other.unique_id] < order[second.unique_id]:
                     second = other
-            if second is None:
-                continue
+            if second is not None:
+                self.make_child(first, second)
 
-            genome = self.make_child_genome(first, second)
-            position = self.random.choice([first.position, second.position])
-            population = first.population
-            name = f"{population}{self.next_agent_number[population]}"
-            self.next_agent_number[population] += 1
-            generation = max(first.generation, second.generation) + 1
-            child = SocietyAgent(
-                self, name, position, genome=genome, generation=generation,
-                parent_ids=(first.unique_id, second.unique_id),
-            )
-            if not self.headless:
-                self.all_agents.append(child)
+    # Create the child of two parents and charge both parents for it.
+    def make_child(self, first, second):
+        genome = self.make_child_genome(first, second)
+        position = self.random.choice([first.position, second.position])
+        population = first.population
+        name = f"{population}{self.next_agent_number[population]}"
+        self.next_agent_number[population] += 1
+        generation = max(first.generation, second.generation) + 1
+        child = SocietyAgent(
+            self, name, position, genome=genome, generation=generation,
+            parent_ids=(first.unique_id, second.unique_id),
+        )
+        if not self.headless:
+            self.all_agents.append(child)
 
-            # Combined parent contributions become the child's holdings.
-            for parent in [first, second]:
-                parent.resources -= self.param("REPRODUCTION_COST_PER_PARENT")
-                parent.next_reproduction_step = self.steps + self.param("REPRODUCTION_COOLDOWN")
-                parent.offspring += 1
-                self.parents_used_this_step.add(parent.unique_id)
+        # Combined parent contributions become the child's holdings.
+        for parent in [first, second]:
+            parent.resources -= self.param("REPRODUCTION_COST_PER_PARENT")
+            parent.next_reproduction_step = self.steps + self.param("REPRODUCTION_COOLDOWN")
+            parent.offspring += 1
+            self.parents_used_this_step.add(parent.unique_id)
 
-            self.births_this_step += 1
-            self.cumulative_births += 1
-            if population == "A":
-                self.population_a_births += 1
-            else:
-                self.population_b_births += 1
-            self.highest_generation = max(self.highest_generation, generation)
-            if self.headless:
-                continue
-            event_text = f"{child.name} born to {first.name} + {second.name} (generation {generation})"
-            if self.last_mutations:
-                event_text += f"; mutated: {', '.join(self.last_mutations)}"
-            self.add_event("birth", event_text, [child.unique_id, first.unique_id, second.unique_id], position)
-            # Round only the explanation; the stored genes keep full precision.
-            genome_description = []
-            for trait, value in child.genome.items():
-                genome_description.append(f"{trait}: {value:.3f}")
-            genome_text = ", ".join(genome_description)
-            self.messages.append(
-                f"Reproduction: {first.name} + {second.name} → {child.name} at {position}. "
-                f"Parents contributed {self.param('REPRODUCTION_COST_PER_PARENT'):.2f} each; "
-                f"child starts with {child.resources:.2f}. Child generation: {generation}. "
-                f"Child genome: {genome_text}. Parents next eligible at timestep "
-                f"{first.next_reproduction_step}."
-            )
+        self.births_this_step += 1
+        self.cumulative_births += 1
+        if population == "A":
+            self.population_a_births += 1
+        else:
+            self.population_b_births += 1
+        self.highest_generation = max(self.highest_generation, generation)
+        if self.headless:
+            return
+        event_text = f"{child.name} born to {first.name} + {second.name} (generation {generation})"
+        if self.last_mutations:
+            event_text += f"; mutated: {', '.join(self.last_mutations)}"
+        self.add_event("birth", event_text, [child.unique_id, first.unique_id, second.unique_id], position)
+        # Round only the explanation; the stored genes keep full precision.
+        genome_description = []
+        for trait, value in child.genome.items():
+            genome_description.append(f"{trait}: {value:.3f}")
+        genome_text = ", ".join(genome_description)
+        self.messages.append(
+            f"Reproduction: {first.name} + {second.name} → {child.name} at {position}. "
+            f"Parents contributed {self.param('REPRODUCTION_COST_PER_PARENT'):.2f} each; "
+            f"child starts with {child.resources:.2f}. Child generation: {generation}. "
+            f"Child genome: {genome_text}. Parents next eligible at timestep "
+            f"{first.next_reproduction_step}."
+        )
 
     # Called after each turn with the agent that just moved. Only pairs including
     # that agent need checking, because nobody else changed position, and only
@@ -952,7 +1249,7 @@ class SocietyModel(mesa.Model):
         self.environmental_resources = sum(self.food.values())
         # One pass over the living agents, adding up everything that is averaged.
         counts = {"A": 0, "B": 0}
-        gene_totals = {"A": dict.fromkeys(config.GENES, 0.0), "B": dict.fromkeys(config.GENES, 0.0)}
+        gene_totals = {"A": dict.fromkeys(self.genes, 0.0), "B": dict.fromkeys(self.genes, 0.0)}
         total_resources = 0.0
         total_age = 0
         total_generation = 0
@@ -962,7 +1259,7 @@ class SocietyModel(mesa.Model):
             total_generation += agent.generation
             counts[agent.population] += 1
             totals = gene_totals[agent.population]
-            for trait in config.GENES:
+            for trait in self.genes:
                 totals[trait] += agent.genome[trait]
         self.population_a = counts["A"]
         self.population_b = counts["B"]
@@ -973,8 +1270,13 @@ class SocietyModel(mesa.Model):
             self.average_resources = total_resources / len(self.agents)
             self.average_age = total_age / len(self.agents)
             self.average_generation = total_generation / len(self.agents)
+        self.average_fertility = 1.0
+        if self.soil and self.fertile:
+            self.average_fertility = sum(self.fertility.values()) / len(self.fertile)
         for population in ["A", "B"]:
-            for trait in config.GENES:
+            setattr(self, f"{population}_moves", self.moves[population])
+            setattr(self, f"{population}_trades", self.trades[population])
+            for trait in self.genes:
                 average = 0.0
                 if counts[population] > 0:
                     average = gene_totals[population][trait] / counts[population]
@@ -1041,8 +1343,14 @@ class SocietyModel(mesa.Model):
             growth = regeneration
             if position in self.farms:
                 growth = farm_growth
+                if self.soil:
+                    growth *= self.fertility[position]
             self.food[position] = min(capacity, before + growth)
             restored += self.food[position] - before
+        if self.soil:
+            self.update_soil()
+        else:
+            self.harvested = set()
         self.running = len(self.agents) > 0
         if self.headless:
             # Batch runs save a row every record_every timesteps and nothing else.

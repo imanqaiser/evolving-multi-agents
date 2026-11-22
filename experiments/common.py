@@ -13,6 +13,7 @@
 #   shock                   (timestep, new level): switch abundance level mid-run
 #   keep_lifetimes          True to return one row per dead agent
 #   labels                  extra {column: value} pairs to copy into every row
+#   version                 1 (default) for Model 1, 2 for Model 2 (level is then 1-7)
 import json
 import multiprocessing
 import os
@@ -42,7 +43,7 @@ def run_one(spec):
         spec["level"], WORLD, seed=spec["seed"], headless=True,
         neutral=spec.get("neutral", False), overrides=spec.get("overrides"),
         gene_pools=spec.get("gene_pools"), frozen_genomes=spec.get("frozen_genomes", False),
-        record_every=RECORD_EVERY,
+        record_every=RECORD_EVERY, version=spec.get("version", 1),
     )
     shock = spec.get("shock")
     for _ in range(spec.get("steps", STEPS)):
@@ -81,14 +82,14 @@ def run_batch(specs, processes=None):
 
 
 # Save the per-timestep rows (and lifetime rows, if kept) of a batch.
-def save_results(name, results):
-    os.makedirs(RESULTS, exist_ok=True)
-    path = os.path.join(RESULTS, f"{name}_timeseries.csv.gz")
+def save_results(name, results, folder=RESULTS):
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"{name}_timeseries.csv.gz")
     pd.concat([r["timeseries"] for r in results]).to_csv(path, index=False, float_format="%.5g")
     print(f"Saved {path}")
     lifetimes = [r["lifetimes"] for r in results if r["lifetimes"] is not None]
     if lifetimes:
-        path = os.path.join(RESULTS, f"{name}_lifetimes.csv.gz")
+        path = os.path.join(folder, f"{name}_lifetimes.csv.gz")
         pd.concat(lifetimes).to_csv(path, index=False, float_format="%.4g")
         print(f"Saved {path}")
 
