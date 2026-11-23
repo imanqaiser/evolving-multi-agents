@@ -49,7 +49,7 @@
         </select>
         <label for="environment">Environment:</label>
         <select id="environment" name="environment">
-            {% for name in config.ENVIRONMENTS %}
+            {% for name in environment_labels %}
             <option value="{{ name }}" {% if name == model.environment_name %}selected{% endif %}>{{ name }}</option>
             {% endfor %}
         </select>

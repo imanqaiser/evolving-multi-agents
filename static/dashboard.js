@@ -7,13 +7,20 @@ const FOOD_EMPTY = [225, 236, 216];  // Depleted patch: pale green (red, green, 
 const FOOD_FULL = [61, 139, 61];     // Full patch: deep green.
 const GROUND = "#f3efe6";            // Cells where no food grows.
 // Gene name, label, and what it controls (the same rules as in model.py).
+// The last three exist only in Model 2 (the server lists a run's genes in state.genes).
 const TRAITS = [
-    ["exploratory_tendency", "Exploration", "jump two cells when food nearby is poor"],
-    ["risk_tolerance", "Risk tolerance", "fight on instead of backing down"],
-    ["sociability", "Sociability", "ignore rivals instead of keeping a distance"],
-    ["cooperative_tendency", "Cooperation", "leave rivals alone and respect their farms"],
-    ["farming_tendency", "Farming", "tend its population's farm and plant new ones"],
+    ["exploratory_tendency", "Exploration", "chance to jump beyond its sight when food nearby is poor"],
+    ["risk_tolerance", "Risk tolerance", "chance to fight on instead of backing down"],
+    ["sociability", "Sociability", "chance to ignore rivals instead of keeping a distance"],
+    ["cooperative_tendency", "Cooperation", "chance to leave rivals alone and respect their farms"],
+    ["farming_tendency", "Farming", "chance to tend its population's farm and plant new ones"],
+    ["vision", "Vision", "sees 1 to 4 cells; seeing further costs more every step"],
+    ["body_size", "Body size", "wins fights and a bigger share of food; costs more every step"],
+    ["expansion", "Expansion", "how deep into the rival homeland it will go"],
 ];
+const SOURCE_COLORS = { farm: "#2a7f3f", wild: "#d4a017", raid: "#b91c1c" };
+const SOIL_POOR = [243, 232, 205];   // Worn-out soil: pale sand.
+const SOIL_RICH = [110, 70, 30];     // Fertile soil: dark brown.
 const FARM_EMPTY = { A: [214, 226, 245], B: [248, 226, 210] }; // Farm tint when empty.
 const FARM_FULL = { A: [127, 159, 214], B: [223, 159, 116] };  // Farm tint when full.
 const SPEEDS = [1, 2, 5, 10, 20, 40, 80];  // Timesteps per second for each slider position.
@@ -35,6 +42,11 @@ function byId(id) {
 function escapeHtml(text) {
     return String(text).replace(/[&<>"]/g, (character) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[character]);
+}
+
+// The genes of the current run: five in Model 1, eight in Model 2.
+function activeTraits() {
+    return TRAITS.filter(([trait]) => state.genes.includes(trait));
 }
 
 function format(number, digits = 2) {
@@ -84,6 +96,8 @@ async function resetSimulation() {
         environment: byId("environment").value,
         start: byId("start").value,
         seed: Number(byId("seed").value),
+        version: Number(byId("model").value),
+        level: Number(byId("level").value),
     });
     forgetRun();
     receive(newState);
@@ -178,10 +192,17 @@ function updateButtons() {
 
 function render() {
     byId("timestep").textContent = state.timestep;
-    byId("run-label").textContent = `${state.world} · ${state.environment} · seed ${state.seed}` +
+    const place = state.version === 2 ? `Model 2 · homeland level ${state.parameters["Homeland level"]}`
+        : `${state.world} · ${state.environment}`;
+    byId("run-label").textContent = `${place} · seed ${state.seed}` +
         (state.start === "random" ? "" : ` · ${state.start_label}`);
     byId("ended-banner").hidden = state.running;
-    const chosen = byId("world").value !== state.world || byId("environment").value !== state.environment
+    // Model 2 parts of the page (legend entries, extra charts) show only in a Model 2 run.
+    document.querySelectorAll(".m2-view").forEach((element) => { element.hidden = state.version !== 2; });
+    const menuVersion = Number(byId("model").value);
+    const placeChanged = menuVersion === 2 ? Number(byId("level").value) !== state.level
+        : byId("world").value !== state.world || byId("environment").value !== state.environment;
+    const chosen = menuVersion !== state.version || placeChanged
         || byId("start").value !== state.start || Number(byId("seed").value) !== state.seed;
     byId("reset-hint").textContent = chosen ? "Press Reset to apply" : "";
     updateButtons();
@@ -217,7 +238,12 @@ function blend(empty, full, fraction) {
 }
 
 // Wild food is green; a farm is tinted with its population's colour.
+// With "Shade soil fertility" ticked, fertile cells show their soil instead.
 function cellColor(row, column) {
+    if (state.fertility && byId("soil-toggle").checked) {
+        const fertility = state.fertility[row][column];
+        return fertility === null ? GROUND : blend(SOIL_POOR, SOIL_RICH, fertility);
+    }
     const capacity = state.capacity[row][column];
     const fraction = capacity > 0 ? state.food[row][column] / capacity : 0;
     const owner = state.farms[row][column];
@@ -263,6 +289,28 @@ function drawGrid() {
                     column * cell + 6, row * cell + 16);
             }
         }
+    }
+
+    // Model 2: tint the two homelands and mark where the shared land begins and ends.
+    if (state.zones) {
+        const top = state.zones.shared_first * cell;
+        const bottom = (state.zones.shared_last + 1) * cell;
+        context.globalAlpha = 0.1;
+        context.fillStyle = COLORS.A;
+        context.fillRect(0, 0, width, top);
+        context.fillStyle = COLORS.B;
+        context.fillRect(0, bottom, width, width - bottom);
+        context.globalAlpha = 1;
+        context.strokeStyle = "rgba(0, 0, 0, 0.35)";
+        context.lineWidth = 1;
+        context.setLineDash([6, 4]);
+        context.beginPath();
+        context.moveTo(0, top);
+        context.lineTo(width, top);
+        context.moveTo(0, bottom);
+        context.lineTo(width, bottom);
+        context.stroke();
+        context.setLineDash([]);
     }
 
     // 2. Thin grid lines, skipped when cells are too small to need them.
@@ -314,6 +362,18 @@ function drawGrid() {
         });
     }
 
+    // Model 2: a dashed square shows how far the inspected agent saw on its latest turn.
+    const watched = state.selected;
+    if (watched && watched.alive && watched.sight_radius) {
+        const [row, column] = watched.position;
+        const reach = watched.sight_radius;
+        context.strokeStyle = "#1f2328";
+        context.lineWidth = 1.5;
+        context.setLineDash([4, 3]);
+        context.strokeRect((column - reach) * cell, (row - reach) * cell, (2 * reach + 1) * cell, (2 * reach + 1) * cell);
+        context.setLineDash([]);
+    }
+
     // 5. A red × where an agent died during the latest timestep.
     context.strokeStyle = "#b3261e";
     context.lineWidth = Math.max(1.5, cell * 0.06);
@@ -352,6 +412,10 @@ function drawGrid() {
 }
 
 function drawAgent(context, agent, x, y, radius, withLabel) {
+    // Model 2: the dot grows with the body size gene.
+    if (agent.body !== null && agent.body !== undefined) {
+        radius *= 0.55 + 0.7 * agent.body;
+    }
     const strength = Math.min(1, agent.resources / state.stats.reproduction_threshold);
     context.globalAlpha = 0.35 + 0.65 * strength;
     context.fillStyle = COLORS[agent.population];
@@ -360,6 +424,14 @@ function drawAgent(context, agent, x, y, radius, withLabel) {
     context.fill();
     context.globalAlpha = 1;
 
+    // Model 2: a red ring marks an agent standing on the rival homeland.
+    if (agent.away) {
+        context.strokeStyle = "#e11d1d";
+        context.lineWidth = Math.max(1.5, radius * 0.35);
+        context.beginPath();
+        context.arc(x, y, radius + context.lineWidth * 0.5, 0, Math.PI * 2);
+        context.stroke();
+    }
     // Newborns (age 0) get a gold ring.
     if (agent.age === 0) {
         context.strokeStyle = "#e3a700";
@@ -426,9 +498,9 @@ function traitBar(value, population, mark) {
 
 function renderTraits() {
     let html = "";
-    for (const [trait, label, hint] of TRAITS) {
+    for (const [trait, label, hint] of activeTraits()) {
         html += `<div class="trait-group"><div class="trait-group-title">${label}
-            <span class="trait-hint">· chance to ${hint}</span></div>`;
+            <span class="trait-hint">· ${hint}</span></div>`;
         for (const population of ["A", "B"]) {
             const value = latest(`Population ${population} average ${trait}`);
             const extinct = latest(`Population ${population}`) === 0;
@@ -497,7 +569,7 @@ function renderInspector() {
             (parent.alive ? "" : " (dead)")).join(" + ");
     }
     let genome = "";
-    for (const [trait, label] of TRAITS) {
+    for (const [trait, label] of activeTraits()) {
         const value = agent.genome[trait];
         const average = latest(`Population ${agent.population} average ${trait}`);
         genome += `<div class="trait-row">
@@ -527,6 +599,8 @@ function renderInspector() {
             <dt>Age</dt><dd>${agent.age} / ${state.parameters["Maximum age"]}</dd>
             <dt>Generation</dt><dd>${agent.generation}</dd>
             <dt>Resources</dt><dd>${format(agent.resources)}</dd>
+            ${agent.fitness === undefined ? "" : `<dt>Fitness</dt><dd>${format(agent.fitness, 3)} (lifetimes of food gathered)</dd>
+            <dt>Sight</dt><dd>${agent.sight_radius} cell(s) on its latest turn</dd>`}
             <dt>Parents</dt><dd>${parents}</dd>
             <dt>Reproduction</dt><dd>${escapeHtml(agent.reproduction_status)}</dd>
         </dl>
@@ -645,6 +719,12 @@ function windowTotal(column, window) {
     return totals;
 }
 
+// Increase of a running-total column over a sliding window of steps.
+function windowGain(column, window) {
+    const values = history[column] || [];
+    return values.map((value, index) => value - values[Math.max(0, index - window)]);
+}
+
 // Percentage of "first" among first + second, over a sliding window of steps.
 // Returns null where there was nothing to count (e.g. no contests at all).
 function rateOverTime(firstColumn, secondColumn, window) {
@@ -682,11 +762,27 @@ function drawCharts() {
     drawChart(byId("chart-food"), [
         { values: history["Environmental resources"] || [], color: "#3d8b3d" },
     ]);
-    for (const [trait] of TRAITS) {
+    for (const [trait] of activeTraits()) {
         drawChart(byId(`chart-${trait}`), [
             { values: whileAlive("A", `Population A average ${trait}`), color: COLORS.A },
             { values: whileAlive("B", `Population B average ${trait}`), color: COLORS.B },
         ], 1);
+    }
+    // Model 2: where each population's food came from over the last 25 steps.
+    if (state.version === 2) {
+        for (const population of ["A", "B"]) {
+            const gained = {};
+            for (const source in SOURCE_COLORS) {
+                gained[source] = windowGain(`Population ${population} food ${source}`, 25);
+            }
+            drawChart(byId(`chart-food-${population}`), Object.keys(SOURCE_COLORS).map((source) => ({
+                values: gained[source].map((amount, index) => {
+                    const total = gained.farm[index] + gained.wild[index] + gained.raid[index];
+                    return total > 0 ? (100 * amount) / total : null;
+                }),
+                color: SOURCE_COLORS[source],
+            })), 100);
+        }
     }
     // Share of all living agents that belong to population A.
     const sizeA = history["Population A"] || [];
@@ -775,6 +871,9 @@ byId("run-button").addEventListener("click", () => (running ? pause() : run()));
 byId("step-button").addEventListener("click", () => stepSimulation(1).catch(showError));
 byId("reset-button").addEventListener("click", () => resetSimulation().catch(showError));
 byId("speed").addEventListener("input", updateButtons);
+byId("model").addEventListener("change", () => { showMenus(); render(); });
+byId("level").addEventListener("change", render);
+byId("soil-toggle").addEventListener("change", drawGrid);
 byId("world").addEventListener("change", render);
 byId("environment").addEventListener("change", render);
 byId("start").addEventListener("change", render);
@@ -808,4 +907,15 @@ document.addEventListener("keydown", (keyEvent) => {
 
 window.addEventListener("resize", () => { if (state) render(); });
 
+// Show the menus of the model chosen in the "Model" menu, and that model's starting choices.
+function showMenus() {
+    const version = byId("model").value;
+    document.querySelectorAll(".m1-control").forEach((element) => { element.hidden = version !== "1"; });
+    document.querySelectorAll(".m2-control").forEach((element) => { element.hidden = version !== "2"; });
+    const current = state ? state.start : START_NAME;
+    byId("start").innerHTML = START_MENUS[version].map(([name, label]) =>
+        `<option value="${name}" ${name === current ? "selected" : ""}>${escapeHtml(label)}</option>`).join("");
+}
+
+showMenus();
 loadState().catch(showError);

@@ -199,3 +199,15 @@ select { padding: 6px; border: 1px solid var(--line); border-radius: 6px; backgr
 .parameters td { padding: 3px 0; border-bottom: 1px solid var(--page); }
 .parameters td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 summary { cursor: pointer; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Model 2 */
+[hidden] { display: none !important; }
+.swatch-zone { width: 11px; height: 11px; border-radius: 2px; border: 1px solid #c8ccd2; }
+.swatch-zone.A { background: #dfe8f6; }
+.swatch-zone.B { background: #f7e6da; }
+.swatch-dot.away { background: #8a8f98; box-shadow: 0 0 0 2px #e11d1d; }
+.swatch-line.farm { background: #2a7f3f; }
+.swatch-line.wild { background: #d4a017; }
+.swatch-line.raid { background: #b91c1c; }
+/* Raids and robberies stand out in the event log. */
+.events li.compete, .events li.theft { background: #fdecec; border-left: 3px solid #e11d1d; font-weight: 600; }

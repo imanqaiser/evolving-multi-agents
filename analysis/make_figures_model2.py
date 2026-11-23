@@ -659,3 +659,203 @@ def figures_m5(m2_final, m2_rates_source):
     save_table(pd.DataFrame(rows), "m5_cooperation.csv")
     rho, p = stats.spearmanr(final["bonus"], final["gene cooperative_tendency"], nan_policy="omit")
     save_table(pd.DataFrame([{"trend of cooperation gene with bonus (rho)": rho, "p": p, "runs": len(final)}]), "m5_trend.csv")
+
+
+# ---------------------------------------------------------------------------
+# M6: Model 1 against Model 2
+# ---------------------------------------------------------------------------
+
+def figures_m6():
+    old_tables = os.path.join(ROOT, "results", "tables")
+    old_genes = pd.read_csv(os.path.join(old_tables, "e2_genes_vs_neutral.csv"))
+    old_genes["separates"] = (old_genes["difference_low"] > 0) | (old_genes["difference_high"] < 0)
+    old_strength = pd.read_csv(os.path.join(old_tables, "e5_selection_by_level.csv"))
+    new_genes = pd.read_csv(os.path.join(TABLES, "m2_genes_vs_neutral.csv"))
+    new_strength = pd.read_csv(os.path.join(TABLES, "m2_selection_strength.csv"))
+    new_strength = new_strength[new_strength["condition"] == "selection"].set_index("level")
+    names = [LABELS[gene] for gene in GENES]
+
+    rows = []
+    for level, group in old_genes.groupby("level"):
+        strength = old_strength[old_strength["level"] == level]
+        strongest = strength.loc[strength["spearman"].abs().idxmax()]
+        rows.append({"model": "Model 1", "level": level, "genes": group["gene"].nunique(),
+                     "genes that separate from drift": int(group["separates"].sum()),
+                     "largest gene-to-offspring correlation": abs(strongest["spearman"]),
+                     "gene with the largest correlation": LABELS[strongest["gene"]]})
+    for level, group in new_genes.groupby("level"):
+        correlations = new_strength.loc[level, names].astype(float)
+        rows.append({"model": "Model 2", "level": level, "genes": group["gene"].nunique(),
+                     "genes that separate from drift": int(group["separates"].sum()),
+                     "largest gene-to-offspring correlation": correlations.abs().max(),
+                     "gene with the largest correlation": correlations.abs().idxmax()})
+    table = pd.DataFrame(rows)
+    save_table(table, "m6_model1_vs_model2.csv")
+
+    figure, axes = plt.subplots(1, 2, figsize=(16, 6))
+    panels = [("genes that separate from drift", "Genes that separate from the neutral control"),
+              ("largest gene-to-offspring correlation", "Largest gene-to-offspring correlation (|Spearman|)")]
+    for axis, (column, title) in zip(axes, panels):
+        for model, color, marker in [("Model 1", NEUTRAL, "D"), ("Model 2", "#111827", "o")]:
+            group = table[table["model"] == model]
+            genes = int(group["genes"].iloc[0])
+            axis.plot(group["level"], group[column], color=color, marker=marker, markersize=9,
+                      label=f"{model} ({genes} genes, {len(group)} levels)")
+        axis.set_title(title)
+        axis.set_xlabel("Abundance level (1 = scarcest; each model has its own scale)")
+        axis.set_xticks(LEVELS)
+        axis.set_ylim(bottom=0)
+    axes[0].set_ylabel("Number of genes")
+    axes[0].legend(loc="best")
+    figure.suptitle("M6. Model 1 against Model 2: how much the genetic algorithm has to work with", fontsize=18)
+    figure.tight_layout()
+    save(figure, "m6_model1_vs_model2.png")
+
+
+# ---------------------------------------------------------------------------
+# M8: Raiders vs Farmers. A hand-set starting point, NOT an evolved one.
+# ---------------------------------------------------------------------------
+
+def figures_m8():
+    data = pd.read_csv(os.path.join(RESULTS, "m8_timeseries.csv.gz"))
+    # The "random" condition is m7's selection runs: random genes, same unequal
+    # homelands. There the poor side stands where the raiders stand.
+    random_start = pd.read_csv(os.path.join(RESULTS, "m7_timeseries.csv.gz"))
+    random_start = random_start[random_start["condition"] == "selection"].copy()
+    random_start["condition"] = "random"
+    random_start["raider_side"] = np.where(random_start["rich_side"] == "A", "B", "A")
+    data = pd.concat([data, random_start], ignore_index=True)
+
+    # Relabel the two populations as "raiders" and "farmers" instead of A and B.
+    for side, own in [("raiders", lambda raider: raider), ("farmers", lambda raider: "B" if raider == "A" else "A")]:
+        letter = data["raider_side"].map(own)
+        for column in [c for c in data.columns if c.startswith("Population A")]:
+            suffix = column[len("Population A"):]
+            data[side + suffix] = np.where(letter == "A", data["Population A" + suffix], data["Population B" + suffix])
+    sides = ["raiders", "farmers"]
+    for side in sides:
+        for gene in GENES:
+            data.loc[data[side] == 0, f"{side} average {gene}"] = np.nan
+    keys = ["condition", "seed"]
+    conditions = ["evolving", "frozen", "swapped", "random"]
+    side_color = {"raiders": "#b91c1c", "farmers": "#2a7f3f"}
+    start = {"raiders": config.RAIDER_GENOME, "farmers": config.FARMER_GENOME}
+
+    # --- Do raiders stay raiders? Genes over time in the evolving condition.
+    evolving = data[data["condition"] == "evolving"]
+    count = evolving["seed"].nunique()
+    shown = ["expansion", "cooperative_tendency", "body_size", "risk_tolerance"]
+    figure, axes = plt.subplots(1, 4, figsize=(21, 5.6), sharey=True)
+    for axis, gene in zip(axes, shown):
+        for side in sides:
+            draw_band(axis, evolving, f"{side} average {gene}", side_color[side], side.capitalize())
+            axis.axhline(start[side][gene], color=side_color[side], linewidth=1.2, linestyle=":")
+        axis.set_title(LABELS[gene])
+        axis.set_xlabel("Timestep")
+        axis.set_ylim(0, 1)
+    axes[0].set_ylabel("Average gene value")
+    axes[0].legend(loc="center right")
+    figure.suptitle("M8. Raiders vs Farmers (hand-set start, not evolved): do raiders stay raiders?\n"
+                    f"(mean and 95% band across {count} runs; dotted = the starting value)", fontsize=18)
+    figure.tight_layout()
+    save(figure, "m8_raider_genes.png")
+
+    # --- Behaviour of each side, per run, over the second half of the run.
+    first = data[data["Timestep"] == STEPS // 2].set_index(keys)
+    last = data[data["Timestep"] == STEPS].set_index(keys)
+    early = data[data["Timestep"] == 300].set_index(keys)
+    late = data[data["Timestep"] >= STEPS // 2]
+    measures = ["share of food from raids", "share of time on rival land",
+                "stolen per agent per 100 steps", "population"]
+    rates = {}
+    for side in sides:
+        def change(column, side=side):
+            return last[f"{side} {column}"] - first[f"{side} {column}"]
+        food = change("food farm") + change("food wild") + change("food raid")
+        time = change("steps home") + change("steps shared") + change("steps rival")
+        table = pd.DataFrame(index=last.index)
+        table["share of food from raids"] = change("food raid") / food.replace(0, np.nan)
+        table["share of time on rival land"] = change("steps rival") / time.replace(0, np.nan)
+        table["stolen per agent per 100 steps"] = 100 * change("cumulative stolen") / change("agent steps").replace(0, np.nan)
+        table["population"] = late.groupby(keys)[side].mean()
+        early_food = sum(early[f"{side} food {source}"] for source in ["farm", "wild", "raid"])
+        table["share of food from raids, first 300 steps"] = early[f"{side} food raid"] / early_food.replace(0, np.nan)
+        table["survived"] = (last[side] > 0).astype(float)
+        table["final size"] = last[side]
+        for gene in shown:
+            table[f"final {LABELS[gene].lower()} gene"] = final_rows(data, keys).set_index(keys)[f"{side} average {gene}"]
+        rates[side] = table.reset_index()
+
+    figure, axes = plt.subplots(1, 4, figsize=(22, 6))
+    positions = np.arange(len(conditions))
+    width = 0.38
+    for axis, measure in zip(axes, measures):
+        for index, side in enumerate(sides):
+            means, halves = [], []
+            for condition in conditions:
+                mean, half, _ = mean_ci(rates[side][rates[side]["condition"] == condition][measure])
+                means.append(mean)
+                halves.append(half)
+            axis.bar(positions + (index - 0.5) * width, means, width, yerr=halves, capsize=3, color=side_color[side],
+                     label="Raiders (in \"random\": the poor side)" if side == "raiders"
+                     else "Farmers (in \"random\": the rich side)")
+        axis.set_xticks(positions)
+        axis.set_xticklabels(["Evolving", "Frozen", "Swapped\nhomelands", "Random\ngenes"], fontsize=13)
+        axis.set_title(measure.capitalize(), fontsize=15)
+        axis.set_ylim(bottom=0)
+        axis.grid(axis="x", visible=False)
+    axes[2].legend(loc="upper right", fontsize=11)
+    figure.suptitle("M8. Raiders vs Farmers: what each side does (second half of each run; "
+                    f"mean and 95% interval across {count} runs)", fontsize=18)
+    figure.tight_layout()
+    save(figure, "m8_behaviour.png")
+
+    rows = []
+    for condition in conditions:
+        size = {side: rates[side][rates[side]["condition"] == condition].set_index("seed")["final size"] for side in sides}
+        for side in sides:
+            group = rates[side][rates[side]["condition"] == condition]
+            other = "farmers" if side == "raiders" else "raiders"
+            row = {"condition": condition, "side": side, "runs": len(group)}
+            for measure in measures + ["share of food from raids, first 300 steps"]:
+                mean, half, _ = mean_ci(group[measure])
+                row[measure] = mean
+                row[measure + " ±"] = half
+            row["runs survived"] = int(group["survived"].sum())
+            row["runs ended larger"] = int((size[side] > size[other]).sum())
+            for gene in shown:
+                row[f"final {LABELS[gene].lower()} gene"] = group[f"final {LABELS[gene].lower()} gene"].mean()
+            rows.append(row)
+    save_table(pd.DataFrame(rows), "m8_raiders_vs_farmers.csv")
+
+
+# Regenerate every Model 2 figure and table. Name some to make only those,
+# for example: python analysis/make_figures_model2.py m6 m8
+if __name__ == "__main__":
+    wanted = sys.argv[1:]
+
+    def want(name):
+        return not wanted or name in wanted
+
+    if want("m1") or want("m2") or want("m5"):
+        versus, chosen, drift, strength = figures_m1_m2()
+    if want("m7"):
+        figures_m7()
+    if want("m0"):
+        figures_m0()
+    if want("m3"):
+        figures_m3()
+    if want("m4"):
+        figures_m4()
+    if want("m5"):
+        # figures_m5 needs m2's final gene values and m2's raw rows (for the default trade bonus).
+        figures_m5(pd.concat([chosen, drift]), load("m2_timeseries.csv.gz"))
+    if want("m6"):
+        figures_m6()
+    if want("m8"):
+        figures_m8()
+    if not wanted:
+        path = os.path.join(TABLES, "all_tables.txt")
+        with open(path, "w") as file:
+            file.write("\n".join(ALL_TABLES) + "\n")
+        print(f"Saved {path}")

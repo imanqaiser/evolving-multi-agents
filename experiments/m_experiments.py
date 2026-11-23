@@ -11,16 +11,19 @@
 #   m4   environmental shock: plentiful to scarce and the reverse.
 #   m5   trade bonus: when does cooperation survive?
 #   m3   veterans of plenty against veterans of scarcity on an open map (needs m2).
+#   m8   Raiders vs Farmers: a hand-set (not evolved) starting point, see config.py.
+#   pools  writes gene_pools/raiders.json and farmers.json for m8 and the dashboard.
 # Results go to results/model2/. PROCESSES=3 limits the CPU cores used.
 import gzip
 import json
 import multiprocessing
 import os
 import pickle
+import random
 import sys
 import time
 
-from common import RESULTS, run_batch, run_one, save_results
+from common import GENE_POOLS, RESULTS, load_gene_pool, run_batch, run_one, save_gene_pool, save_results
 import config
 
 FOLDER = os.path.join(RESULTS, "model2")
@@ -48,6 +51,29 @@ def open_map(experiment, condition, level, seed, **extra):
 
 def round_pool(genomes):
     return [{gene: round(value, 4) for gene, value in genome.items()} for genome in genomes]
+
+
+# The Raiders vs Farmers starting pools: the hand-set genome from config.py
+# plus a little noise on every gene, always from the same seed.
+def make_scenario_pools():
+    sampler = random.Random(config.SCENARIO_POOL_SEED)
+    for name, base in [("raiders", config.RAIDER_GENOME), ("farmers", config.FARMER_GENOME)]:
+        pool = []
+        for _ in range(config.SCENARIO_POOL_SIZE):
+            pool.append({gene: min(1.0, max(0.0, value + sampler.gauss(0, config.SCENARIO_NOISE)))
+                         for gene, value in base.items()})
+        path = os.path.join(GENE_POOLS, f"{name}.json")
+        save_gene_pool(path, pool)
+        print(f"Saved {path}")
+    # For the dashboard's "evolved" option: a sample of the agents alive at the
+    # end of m2's runs at the scarcest and the most plentiful level.
+    with gzip.open(os.path.join(FOLDER, "m2_gene_pools.json.gz"), "rt") as file:
+        evolved = json.load(file)
+    for name, level in [("m2_scarcity_veterans", SCARCE), ("m2_plenty_veterans", PLENTIFUL)]:
+        genomes = [genome for run in evolved[str(level)].values() for side in run.values() for genome in side]
+        path = os.path.join(GENE_POOLS, f"{name}.json")
+        save_gene_pool(path, sampler.sample(genomes, config.SCENARIO_POOL_SIZE))
+        print(f"Saved {path}")
 
 
 def run_one_indexed(item):
@@ -82,6 +108,9 @@ def run_resumable(name, specs, limit):
 
 if __name__ == "__main__":
     name = sys.argv[1]
+    if name == "pools":
+        make_scenario_pools()
+        raise SystemExit(0)
     specs = []
     if name == "m2":
         for level in config.M2_MULTIPLIERS:
@@ -140,6 +169,26 @@ if __name__ == "__main__":
                         "M3", mode, level, seed, steps=1000, frozen_genomes=mode == "frozen",
                         gene_pools={plenty_side: veterans(PLENTIFUL, seed), scarcity_side: veterans(SCARCE, seed)},
                         labels={"plenty_side": plenty_side}))
+    elif name == "m8":
+        # Raiders vs Farmers (hand-set genomes, not evolved). The sides alternate
+        # as in m7: even seeds make A the rich side. A fourth condition, "random"
+        # (random genes, same unequal homelands), is m7's "selection" runs: the
+        # settings are identical, so the figures read them from m7's results.
+        raiders = load_gene_pool(os.path.join(GENE_POOLS, "raiders.json"))
+        farmers = load_gene_pool(os.path.join(GENE_POOLS, "farmers.json"))
+        for seed in SEEDS:
+            rich = "A" if seed % 2 == 0 else "B"
+            poor = "B" if rich == "A" else "A"
+            levels = {rich: config.FARMER_HOMELAND_LEVEL, poor: config.RAIDER_HOMELAND_LEVEL}
+            #   evolving  raiders poor, farmers rich, genes inherit and mutate
+            #   frozen    the same, but children copy the starting genomes
+            #   swapped   raiders get the rich homeland, farmers the poor one
+            for condition, raider_side in [("evolving", poor), ("frozen", poor), ("swapped", rich)]:
+                farmer_side = "B" if raider_side == "A" else "A"
+                specs.append(zoned("M8", condition, MIDDLE, seed, frozen_genomes=condition == "frozen",
+                                   gene_pools={raider_side: raiders, farmer_side: farmers},
+                                   overrides={"HOMELAND_LEVELS": levels},
+                                   labels={"rich_side": rich, "raider_side": raider_side}))
     else:
         raise SystemExit(f"Unknown experiment: {name}")
 

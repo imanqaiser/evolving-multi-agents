@@ -231,3 +231,22 @@ MODEL_2_ZONES = {
     "EXPANSION_MAX_ROWS": 14,
     "DEFENDER_ADVANTAGE": 2.0,
 }
+
+
+# "Raiders vs Farmers": a hand-set starting point, NOT an evolved one. The two
+# genomes below were written by hand to see what such populations do. Each
+# starting agent gets the genome plus a little random noise on every gene.
+# The raiders start with the poor homeland and the farmers with the rich one.
+RAIDER_GENOME = {
+    "exploratory_tendency": 0.3, "risk_tolerance": 0.9, "sociability": 0.9, "cooperative_tendency": 0.05,
+    "farming_tendency": 0.3, "vision": 0.8, "body_size": 0.8, "expansion": 0.95,
+}
+FARMER_GENOME = {
+    "exploratory_tendency": 0.05, "risk_tolerance": 0.3, "sociability": 0.3, "cooperative_tendency": 0.8,
+    "farming_tendency": 0.9, "vision": 0.5, "body_size": 0.2, "expansion": 0.05,
+}
+SCENARIO_NOISE = 0.05       # Standard deviation of the noise on each gene.
+SCENARIO_POOL_SIZE = 200    # Genomes saved in gene_pools/raiders.json and farmers.json.
+SCENARIO_POOL_SEED = 0
+RAIDER_HOMELAND_LEVEL = 1   # Poor.
+FARMER_HOMELAND_LEVEL = 7   # Rich.

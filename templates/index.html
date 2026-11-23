@@ -32,26 +32,36 @@
             </label>
         </div>
         <div class="control-group">
-            <label>World
+            <label>Model
+                <select id="model">
+                    <option value="1" {% if model.version == 1 %}selected{% endif %}>Model 1 (five genes)</option>
+                    <option value="2" {% if model.version == 2 %}selected{% endif %}>Model 2 (three zones, eight genes)</option>
+                </select>
+            </label>
+            <label class="m1-control">World
                 <select id="world">
                     {% for name in config.WORLDS %}
                     <option value="{{ name }}" {% if name == model.world_name %}selected{% endif %}>{{ name }} ({{ config.WORLDS[name].grid_size }}×{{ config.WORLDS[name].grid_size }})</option>
                     {% endfor %}
                 </select>
             </label>
-            <label>Environment
+            <label class="m1-control">Environment
                 <select id="environment">
-                    {% for name in config.ENVIRONMENTS %}
+                    {% for name in environment_labels %}
                     <option value="{{ name }}" {% if name == model.environment_name %}selected{% endif %}>{{ environment_labels[name] }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label>Starting agents
-                <select id="start">
-                    {% for name, label in start_options.items() %}
-                    <option value="{{ name }}" {% if name == start_name %}selected{% endif %}>{{ label }}</option>
+            <label class="m2-control">Homeland level
+                <select id="level">
+                    {% for level, label in levels.items() %}
+                    <option value="{{ level }}" {% if model.version == 2 and level == model.environment.level %}selected{% elif model.version == 1 and level == 4 %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
+            </label>
+            <!-- The choices depend on the model; dashboard.js fills them in from START_MENUS. -->
+            <label>Starting agents
+                <select id="start"></select>
             </label>
             <label>Seed
                 <input id="seed" type="number" min="0" step="1" value="{{ model.seed }}">
@@ -84,6 +94,11 @@
                     <span><i class="swatch-farm B"></i>Farm of B</span>
                     <span><i class="swatch-food"></i>Wild food (darker = more food)</span>
                     <span><i class="swatch-ground"></i>Barren land</span>
+                    <span class="m2-view"><i class="swatch-zone A"></i>Homeland of A</span>
+                    <span class="m2-view"><i class="swatch-zone B"></i>Homeland of B (shared land in between)</span>
+                    <span class="m2-view"><i class="swatch-dot away"></i>Red ring = on the rival homeland</span>
+                    <span class="m2-view">Bigger dot = bigger body</span>
+                    <label class="m2-view"><input id="soil-toggle" type="checkbox"> Shade soil fertility (dark = fertile)</label>
                 </div>
                 <p class="hint">Click a cell to inspect an agent. Click again to cycle through agents sharing a cell.</p>
             </section>
@@ -100,6 +115,11 @@
                     <figure><figcaption>Average sociability</figcaption><canvas id="chart-sociability"></canvas></figure>
                     <figure><figcaption>Average cooperation</figcaption><canvas id="chart-cooperative_tendency"></canvas></figure>
                     <figure><figcaption>Average farming</figcaption><canvas id="chart-farming_tendency"></canvas></figure>
+                    <figure class="m2-view"><figcaption>Average vision</figcaption><canvas id="chart-vision"></canvas></figure>
+                    <figure class="m2-view"><figcaption>Average body size</figcaption><canvas id="chart-body_size"></canvas></figure>
+                    <figure class="m2-view"><figcaption>Average expansion</figcaption><canvas id="chart-expansion"></canvas></figure>
+                    <figure class="m2-view"><figcaption>Population A: where its food comes from (%, last 25 steps)</figcaption><canvas id="chart-food-A"></canvas></figure>
+                    <figure class="m2-view"><figcaption>Population B: where its food comes from (%, last 25 steps)</figcaption><canvas id="chart-food-B"></canvas></figure>
                     <figure><figcaption>Share of all agents that belong to population A (%)</figcaption><canvas id="chart-share"></canvas></figure>
                     <figure><figcaption>Behaviour: left rivals alone when meeting (%, last 25 steps)</figcaption><canvas id="chart-cooperate-rate"></canvas></figure>
                     <figure><figcaption>Behaviour: kept distance from rivals in view (%, last 25 steps)</figcaption><canvas id="chart-avoid-rate"></canvas></figure>
@@ -109,6 +129,9 @@
                 <div class="legend">
                     <span><i class="swatch-line A"></i>Population A</span>
                     <span><i class="swatch-line B"></i>Population B</span>
+                    <span class="m2-view"><i class="swatch-line farm"></i>Food from own farms</span>
+                    <span class="m2-view"><i class="swatch-line wild"></i>Wild food</span>
+                    <span class="m2-view"><i class="swatch-line raid"></i>Raided from rival farms</span>
                 </div>
             </section>
         </div>
@@ -159,6 +182,11 @@
         </div>
     </main>
 
+    <script>
+        // The "Starting agents" choices of each model, and the one in use now.
+        const START_MENUS = {{ start_menus|tojson }};
+        const START_NAME = {{ start_name|tojson }};
+    </script>
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>

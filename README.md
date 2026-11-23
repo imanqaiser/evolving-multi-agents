@@ -24,13 +24,18 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Then open http://127.0.0.1:5000. `demo.mp4` is a recorded run.
+Then open http://127.0.0.1:5000. Choose "Model 2" in the Model menu and press Reset for the
+three-zone map; its "Raiders vs Farmers" start is a hand-set scenario, not an evolved one.
+
+`demo.mp4` is a recording of that scenario (`python analysis/make_demo.py` renders it again).
+`demo_model1.mp4` is a recorded Model 1 run.
 
 ## Run the experiments
 
 ```bash
 python experiments/e1_drift.py            # Model 1: e1 to e5, one script each
 python experiments/m_experiments.py m2    # Model 2: m0, m2, m3, m4, m5, m7
+python experiments/m_experiments.py m8    # Raiders vs Farmers (hand-set genomes, not evolved)
 ```
 
 Results are saved in `results/`. They are already in the repository, so this step can be skipped.
@@ -38,7 +43,8 @@ Results are saved in `results/`. They are already in the repository, so this ste
 ## Make the figures
 
 ```bash
-python analysis/make_figures.py
+python analysis/make_figures.py           # Model 1
+python analysis/make_figures_model2.py    # Model 2, with tables in results/model2/tables/
 ```
 
 Figures are saved in `figures/`.

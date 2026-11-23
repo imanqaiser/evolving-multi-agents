@@ -1,0 +1,255 @@
+
+--- m2_genes_vs_neutral.csv ---
+ level           gene  selection  neutral  difference    low   high      d     p  separates
+     1    Exploration      0.107    0.473      -0.366 -0.422 -0.310 -4.252 0.000       True
+     1 Risk tolerance      0.630    0.521       0.109  0.041  0.177  1.028 0.002       True
+     1    Sociability      0.692    0.462       0.230  0.150  0.310  1.838 0.000       True
+     1    Cooperation      0.283    0.491      -0.208 -0.303 -0.114 -1.418 0.000       True
+     1        Farming      0.531    0.512       0.020 -0.063  0.102  0.152 0.633      False
+     1         Vision      0.361    0.486      -0.125 -0.187 -0.064 -1.311 0.000       True
+     1      Body size      0.157    0.498      -0.341 -0.402 -0.279 -3.571 0.000       True
+     1      Expansion      0.472    0.477      -0.005 -0.086  0.076 -0.039 0.903      False
+     2    Exploration      0.084    0.495      -0.410 -0.460 -0.361 -5.414 0.000       True
+     2 Risk tolerance      0.593    0.518       0.075  0.009  0.141  0.727 0.027       True
+     2    Sociability      0.569    0.506       0.063 -0.006  0.131  0.583 0.073      False
+     2    Cooperation      0.320    0.543      -0.223 -0.283 -0.163 -2.382 0.000       True
+     2        Farming      0.544    0.525       0.020 -0.058  0.097  0.163 0.611      False
+     2         Vision      0.396    0.495      -0.099 -0.145 -0.053 -1.395 0.000       True
+     2      Body size      0.139    0.462      -0.323 -0.373 -0.274 -4.234 0.000       True
+     2      Expansion      0.501    0.481       0.020 -0.041  0.081  0.209 0.512      False
+     3    Exploration      0.073    0.504      -0.431 -0.476 -0.386 -6.246 0.000       True
+     3 Risk tolerance      0.591    0.497       0.094  0.029  0.159  0.927 0.006       True
+     3    Sociability      0.680    0.486       0.193  0.133  0.254  2.036 0.000       True
+     3    Cooperation      0.293    0.523      -0.230 -0.285 -0.175 -2.693 0.000       True
+     3        Farming      0.629    0.474       0.155  0.096  0.215  1.675 0.000       True
+     3         Vision      0.423    0.476      -0.054 -0.109  0.002 -0.627 0.057      False
+     3      Body size      0.160    0.501      -0.341 -0.401 -0.282 -3.724 0.000       True
+     3      Expansion      0.505    0.495       0.010 -0.072  0.093  0.082 0.797      False
+     4    Exploration      0.088    0.494      -0.406 -0.457 -0.355 -5.240 0.000       True
+     4 Risk tolerance      0.573    0.527       0.045 -0.035  0.126  0.362 0.260      False
+     4    Sociability      0.650    0.497       0.154  0.080  0.227  1.343 0.000       True
+     4    Cooperation      0.296    0.517      -0.221 -0.274 -0.169 -2.718 0.000       True
+     4        Farming      0.571    0.534       0.036 -0.020  0.093  0.413 0.199      False
+     4         Vision      0.458    0.551      -0.093 -0.140 -0.047 -1.300 0.000       True
+     4      Body size      0.168    0.540      -0.372 -0.431 -0.313 -4.060 0.000       True
+     4      Expansion      0.506    0.516      -0.010 -0.083  0.064 -0.086 0.787      False
+     5    Exploration      0.069    0.528      -0.458 -0.500 -0.416 -7.192 0.000       True
+     5 Risk tolerance      0.571    0.500       0.070  0.002  0.138  0.661 0.043       True
+     5    Sociability      0.636    0.452       0.184  0.128  0.240  2.116 0.000       True
+     5    Cooperation      0.292    0.532      -0.241 -0.305 -0.177 -2.408 0.000       True
+     5        Farming      0.585    0.523       0.063 -0.004  0.129  0.603 0.064      False
+     5         Vision      0.481    0.456       0.026 -0.012  0.064  0.435 0.179      False
+     5      Body size      0.271    0.517      -0.245 -0.305 -0.186 -2.635 0.000       True
+     5      Expansion      0.502    0.478       0.024 -0.037  0.085  0.256 0.426      False
+     6    Exploration      0.048    0.487      -0.439 -0.493 -0.386 -5.435 0.000       True
+     6 Risk tolerance      0.647    0.522       0.125  0.059  0.191  1.216 0.000       True
+     6    Sociability      0.636    0.511       0.125  0.064  0.186  1.316 0.000       True
+     6    Cooperation      0.294    0.484      -0.190 -0.251 -0.128 -1.977 0.000       True
+     6        Farming      0.592    0.528       0.064 -0.016  0.144  0.511 0.114      False
+     6         Vision      0.495    0.498      -0.003 -0.058  0.051 -0.040 0.900      False
+     6      Body size      0.282    0.420      -0.137 -0.202 -0.072 -1.347 0.000       True
+     6      Expansion      0.499    0.505      -0.006 -0.088  0.076 -0.045 0.888      False
+     7    Exploration      0.039    0.461      -0.422 -0.474 -0.371 -5.449 0.000       True
+     7 Risk tolerance      0.620    0.482       0.139  0.065  0.212  1.219 0.001       True
+     7    Sociability      0.642    0.469       0.173  0.110  0.235  1.774 0.000       True
+     7    Cooperation      0.245    0.456      -0.211 -0.262 -0.161 -2.701 0.000       True
+     7        Farming      0.549    0.504       0.045 -0.019  0.108  0.452 0.161      False
+     7         Vision      0.542    0.531       0.011 -0.030  0.053  0.179 0.577      False
+     7      Body size      0.365    0.465      -0.100 -0.166 -0.033 -0.962 0.004       True
+     7      Expansion      0.475    0.518      -0.042 -0.111  0.026 -0.398 0.216      False
+
+--- m1_genes_under_selection.csv ---
+ level  genes that separate from drift (of 8)
+     1                                      6
+     2                                      5
+     3                                      6
+     4                                      5
+     5                                      5
+     6                                      5
+     7                                      5
+
+--- m2_gene_trend.csv ---
+          gene  scarce  plentiful  trend rho  trend p  plentiful - scarce difference  plentiful - scarce low  plentiful - scarce high  plentiful - scarce d  plentiful - scarce p
+   Exploration   0.107      0.039     -0.586    0.000                         -0.068                  -0.091                   -0.045                -1.932                 0.000
+Risk tolerance   0.630      0.620      0.030    0.728                         -0.010                  -0.071                    0.051                -0.104                 0.744
+   Sociability   0.692      0.642     -0.032    0.707                         -0.051                  -0.115                    0.014                -0.501                 0.122
+   Cooperation   0.283      0.245     -0.118    0.166                         -0.038                  -0.101                    0.025                -0.394                 0.224
+       Farming   0.531      0.549      0.049    0.566                          0.018                  -0.061                    0.097                 0.145                 0.648
+        Vision   0.361      0.542      0.772    0.000                          0.181                   0.145                    0.218                 3.230                 0.000
+     Body size   0.157      0.365      0.664    0.000                          0.208                   0.151                    0.266                 2.335                 0.000
+     Expansion   0.472      0.475      0.008    0.923                          0.003                  -0.071                    0.077                 0.026                 0.935
+
+--- m2_behaviour.csv ---
+condition  level  agents  smaller population  both survive  encounters  encounters per 100 agent-steps  cooperation rate  fights per encounter  raid rate  stolen per agent per 100 steps  trades per agent per 100 steps  starvation share of deaths  food share farm  food share wild  food share raid  time share home  time share shared  time share rival  share of encounters in a homeland  share of fights in a homeland
+  neutral      1 516.226             166.053         0.950    5722.450                           1.460             0.389                 0.091      0.528                           1.304                           0.294                       0.236            0.678            0.320            0.002            0.650              0.347             0.003                              0.225                          0.252
+  neutral      2 637.541             267.561         1.000    9449.850                           1.974             0.398                 0.087      0.536                           1.729                           0.402                       0.233            0.744            0.253            0.003            0.722              0.274             0.003                              0.205                          0.233
+  neutral      3 665.709             273.549         1.000    9962.900                           1.999             0.397                 0.087      0.531                           1.783                           0.404                       0.252            0.755            0.242            0.003            0.733              0.263             0.004                              0.227                          0.268
+  neutral      4 667.109             298.682         1.000   10920.550                           2.183             0.399                 0.087      0.528                           1.885                           0.441                       0.245            0.755            0.242            0.003            0.734              0.262             0.003                              0.188                          0.213
+  neutral      5 674.224             290.759         1.000   10779.100                           2.129             0.397                 0.088      0.534                           1.855                           0.430                       0.270            0.756            0.241            0.003            0.737              0.260             0.003                              0.203                          0.233
+  neutral      6 703.920             322.950         1.000   12735.600                           2.413             0.399                 0.088      0.536                           2.105                           0.483                       0.502            0.762            0.234            0.003            0.749              0.247             0.004                              0.198                          0.228
+  neutral      7 742.972             348.320         1.000   15203.100                           2.726             0.393                 0.088      0.545                           2.442                           0.530                       0.642            0.774            0.222            0.004            0.764              0.232             0.004                              0.224                          0.247
+selection      1 385.220             108.698         0.950    2083.750                           0.712             0.226                 0.211      0.795                           0.698                           0.061                       0.125            0.502            0.495            0.002            0.467              0.531             0.003                              0.325                          0.278
+selection      2 530.649             179.330         1.000    1716.900                           0.432             0.224                 0.205      0.783                           0.575                           0.034                       0.283            0.644            0.353            0.003            0.615              0.382             0.003                              0.548                          0.557
+selection      3 542.163             193.118         1.000    3552.750                           0.867             0.213                 0.184      0.814                           1.016                           0.050                       0.423            0.647            0.348            0.005            0.626              0.370             0.004                              0.465                          0.460
+selection      4 545.925             197.773         1.000    3712.700                           0.911             0.243                 0.165      0.800                           1.100                           0.064                       0.473            0.649            0.346            0.005            0.631              0.364             0.005                              0.456                          0.427
+selection      5 621.612             208.299         1.000    3675.600                           0.782             0.225                 0.203      0.777                           1.073                           0.058                       0.554            0.695            0.299            0.005            0.675              0.320             0.005                              0.538                          0.546
+selection      6 677.643             278.292         1.000    5072.350                           1.005             0.208                 0.230      0.823                           1.235                           0.059                       0.553            0.724            0.271            0.005            0.708              0.288             0.004                              0.551                          0.518
+selection      7 738.674             302.461         1.000    6324.950                           1.141             0.197                 0.213      0.829                           1.472                           0.054                       0.617            0.745            0.249            0.006            0.734              0.261             0.005                              0.557                          0.541
+
+--- m2_behaviour_trend.csv ---
+                          measure   scarce  plentiful  trend rho  trend p  difference      low     high      d     p
+                           agents  385.220    738.674      0.900    0.000     353.454  320.605  386.303  6.995 0.000
+               smaller population  108.698    302.461      0.733    0.000     193.762  161.133  226.392  3.825 0.000
+                     both survive    0.950      1.000      0.127    0.134       0.050   -0.055    0.155  0.316 0.330
+                       encounters 2083.750   6324.950      0.576    0.000    4241.200 2726.982 5755.418  1.798 0.000
+   encounters per 100 agent-steps    0.712      1.141      0.368    0.000       0.429    0.066    0.792  0.759 0.022
+                 cooperation rate    0.226      0.197     -0.075    0.379      -0.029   -0.087    0.029 -0.334 0.315
+             fights per encounter    0.211      0.213      0.156    0.068       0.002   -0.062    0.067  0.026 0.938
+                        raid rate    0.795      0.829      0.088    0.304       0.034   -0.033    0.101  0.350 0.306
+   stolen per agent per 100 steps    0.698      1.472      0.427    0.000       0.774    0.356    1.193  1.185 0.001
+   trades per agent per 100 steps    0.061      0.054      0.235    0.005      -0.007   -0.056    0.042 -0.095 0.767
+       starvation share of deaths    0.125      0.617      0.950    0.000       0.492    0.475    0.509 18.413 0.000
+                  food share farm    0.502      0.745      0.865    0.000       0.242    0.190    0.295  3.041 0.000
+                  food share wild    0.495      0.249     -0.870    0.000      -0.247   -0.300   -0.194 -3.071 0.000
+                  food share raid    0.002      0.006      0.398    0.000       0.004    0.002    0.006  1.269 0.000
+                  time share home    0.467      0.734      0.885    0.000       0.267    0.215    0.320  3.362 0.000
+                time share shared    0.531      0.261     -0.889    0.000      -0.270   -0.323   -0.217 -3.368 0.000
+                 time share rival    0.003      0.005      0.295    0.000       0.002    0.001    0.004  0.908 0.007
+share of encounters in a homeland    0.325      0.557      0.255    0.003       0.233    0.082    0.383  1.025 0.004
+    share of fights in a homeland    0.278      0.541      0.257    0.003       0.263    0.132    0.394  1.350 0.000
+
+--- m2_selection_strength.csv ---
+condition  level  Exploration  Exploration ±  Risk tolerance  Risk tolerance ±  Sociability  Sociability ±  Cooperation  Cooperation ±  Farming  Farming ±  Vision  Vision ±  Body size  Body size ±  Expansion  Expansion ±  offspring top / bottom fitness quarter
+  neutral      1       -0.001          0.005           0.004             0.004        0.001          0.005       -0.002          0.004   -0.003      0.004   0.000     0.004     -0.001        0.004      0.000        0.003                                   2.466
+  neutral      2        0.001          0.004           0.001             0.003        0.000          0.004        0.002          0.003    0.003      0.004   0.002     0.003     -0.003        0.005     -0.003        0.003                                   2.457
+  neutral      3       -0.001          0.003           0.000             0.005        0.001          0.004        0.001          0.005   -0.000      0.004  -0.001     0.003     -0.001        0.003      0.000        0.005                                   2.601
+  neutral      4        0.001          0.005           0.003             0.004        0.000          0.004        0.001          0.004    0.001      0.003  -0.002     0.004     -0.001        0.003     -0.000        0.004                                   2.546
+  neutral      5        0.002          0.004           0.003             0.004       -0.003          0.004        0.002          0.003   -0.003      0.005  -0.005     0.004     -0.000        0.004      0.001        0.004                                   2.697
+  neutral      6       -0.001          0.005          -0.002             0.005        0.002          0.006       -0.005          0.004    0.002      0.005   0.002     0.005     -0.002        0.004     -0.003        0.005                                   5.567
+  neutral      7       -0.002          0.005          -0.004             0.006       -0.005          0.005       -0.002          0.006    0.003      0.003  -0.005     0.006     -0.000        0.004      0.001        0.006                                  11.277
+selection      1       -0.026          0.013           0.011             0.018        0.018          0.007       -0.020          0.016   -0.007      0.012  -0.031     0.011     -0.023        0.015      0.003        0.010                                   1.964
+selection      2        0.021          0.015           0.022             0.017        0.020          0.020       -0.028          0.020   -0.015      0.020  -0.068     0.018     -0.031        0.015     -0.006        0.021                                   3.241
+selection      3        0.020          0.014           0.015             0.014        0.038          0.015       -0.038          0.015   -0.013      0.019  -0.080     0.011     -0.030        0.010     -0.004        0.013                                   5.255
+selection      4        0.025          0.013           0.017             0.018        0.039          0.013       -0.046          0.012    0.002      0.013  -0.076     0.009     -0.036        0.014     -0.003        0.017                                   6.091
+selection      5        0.019          0.013           0.012             0.011        0.042          0.014       -0.021          0.016   -0.012      0.020  -0.080     0.010     -0.043        0.018     -0.003        0.016                                   9.326
+selection      6       -0.010          0.007           0.017             0.015        0.020          0.010       -0.032          0.012   -0.001      0.010  -0.072     0.006     -0.060        0.011      0.005        0.012                                   8.917
+selection      7       -0.006          0.006           0.016             0.007        0.030          0.010       -0.027          0.007   -0.005      0.014  -0.068     0.005     -0.044        0.011     -0.005        0.010                                  12.425
+
+--- m7_genes_rich_vs_poor.csv ---
+          gene  rich side  poor side  rich - poor    low   high     p  rich neutral  poor neutral
+   Exploration      0.039      0.134       -0.095 -0.157 -0.034 0.004         0.460         0.501
+Risk tolerance      0.553      0.524        0.029 -0.107  0.165 0.663         0.433         0.541
+   Sociability      0.608      0.636       -0.028 -0.156  0.100 0.649         0.523         0.519
+   Cooperation      0.283      0.347       -0.064 -0.187  0.059 0.292         0.538         0.584
+       Farming      0.551      0.515        0.035 -0.075  0.145 0.509         0.543         0.441
+        Vision      0.526      0.433        0.092 -0.033  0.217 0.138         0.484         0.540
+     Body size      0.334      0.277        0.057 -0.125  0.238 0.519         0.492         0.530
+     Expansion      0.478      0.595       -0.117 -0.234 -0.001 0.049         0.478         0.440
+
+--- m7_behaviour.csv ---
+                            measure  neutral  selection
+                    rich population  430.337    392.163
+               rich food from farms    0.688      0.746
+               rich food from raids    0.003      0.002
+           rich time in shared land    0.327      0.261
+            rich time on rival land    0.003      0.002
+rich stolen per agent per 100 steps    1.182      0.776
+              rich cooperation rate    0.394      0.200
+                      rich survived    1.000      1.000
+                    poor population  194.653    175.683
+               poor food from farms    0.857      0.645
+               poor food from raids    0.002      0.008
+           poor time in shared land    0.151      0.366
+            poor time on rival land    0.002      0.007
+poor stolen per agent per 100 steps    2.144      1.766
+              poor cooperation rate    0.394      0.230
+                      poor survived    1.000      1.000
+
+--- m0_exclusion.csv ---
+ level condition  runs  runs where both survive  median timestep of exclusion  smaller side's share at the end
+     1   neutral    20                       20                           NaN                            0.429
+     1 selection    20                       11                      1160.000                            0.148
+     4   neutral    20                       20                           NaN                            0.399
+     4 selection    20                        1                       660.000                            0.006
+     7   neutral    20                       20                           NaN                            0.376
+     7 selection    20                        1                       460.000                            0.001
+
+--- m3_outcome.csv ---
+ level     mode  runs  plenty veterans' final share     ±  runs plenty veterans larger  runs scarcity veterans larger  sign test p  plenty veterans died out  scarcity veterans died out
+     1   frozen    20                         0.639 0.193                           15                              5        0.041                         4                           8
+     1 evolving    20                         0.612 0.172                           14                              6        0.115                         3                           4
+     4   frozen    20                         0.585 0.224                           11                              9        0.824                         6                          11
+     4 evolving    20                         0.600 0.235                           12                              8        0.503                         8                          12
+     7   frozen    20                         0.670 0.211                           14                              6        0.115                         4                          11
+     7 evolving    20                         0.606 0.223                           12                              8        0.503                         7                          11
+
+--- m4_population.csv ---
+           condition  runs  agents at 1200  agents at 1300  agents at 1400  agents at 1800  agents at 2400  runs that lost a population
+plenty then scarcity    15         796.933         268.933         261.933         286.533         314.067                            4
+scarcity then plenty    15         409.267         648.933         571.533         653.600         656.333                            0
+       always plenty    15         796.933         744.467         711.867         695.067         741.600                            0
+     always scarcity    15         409.267         410.133         396.800         415.000         410.667                            0
+
+--- m4_gene_shift.csv ---
+          gene                shock  before  after  if it had not switched  where it was heading  shift vs no switch    low   high     p  share of the gap covered
+   Exploration plenty then scarcity   0.052  0.054                   0.028                 0.070               0.026  0.013  0.038 0.000                       NaN
+   Exploration scarcity then plenty   0.142  0.054                   0.070                 0.028              -0.015 -0.037  0.006 0.149                       NaN
+Risk tolerance plenty then scarcity   0.595  0.636                   0.623                 0.631               0.013 -0.100  0.125 0.817                       NaN
+Risk tolerance scarcity then plenty   0.616  0.647                   0.631                 0.623               0.015 -0.079  0.109 0.746                       NaN
+   Sociability plenty then scarcity   0.615  0.706                   0.649                 0.706               0.057 -0.032  0.146 0.200                     0.992
+   Sociability scarcity then plenty   0.685  0.697                   0.706                 0.649              -0.009 -0.092  0.074 0.821                     0.160
+   Cooperation plenty then scarcity   0.247  0.177                   0.199                 0.238              -0.022 -0.065  0.021 0.300                       NaN
+   Cooperation scarcity then plenty   0.271  0.268                   0.238                 0.199               0.030 -0.060  0.119 0.500                       NaN
+       Farming plenty then scarcity   0.576  0.561                   0.576                 0.506              -0.016 -0.130  0.099 0.782                     0.221
+       Farming scarcity then plenty   0.502  0.559                   0.506                 0.576               0.053 -0.072  0.178 0.393                     0.757
+        Vision plenty then scarcity   0.541  0.358                   0.499                 0.337              -0.141 -0.175 -0.106 0.000                     0.870
+        Vision scarcity then plenty   0.388  0.457                   0.337                 0.499               0.120  0.080  0.159 0.000                     0.739
+     Body size plenty then scarcity   0.408  0.207                   0.238                 0.104              -0.031 -0.123  0.060 0.491                     0.232
+     Body size scarcity then plenty   0.168  0.155                   0.104                 0.238               0.051  0.012  0.089 0.012                     0.378
+     Expansion plenty then scarcity   0.464  0.530                   0.446                 0.479               0.084 -0.018  0.185 0.102                       NaN
+     Expansion scarcity then plenty   0.458  0.428                   0.479                 0.446              -0.052 -0.176  0.072 0.396                       NaN
+
+--- m5_cooperation.csv ---
+ level  bonus  runs  cooperation gene     ±  neutral control  cooperation rate  trades per agent per 100 steps  agents
+     1  0.000    12             0.277 0.081            0.491             0.235                           0.000 420.152
+     1  0.500    12             0.283 0.090            0.491             0.225                           0.061 378.425
+     1  1.000    12             0.345 0.074            0.491             0.233                           0.062 402.202
+     1  2.000    12             0.349 0.079            0.491             0.289                           0.134 416.220
+     4  0.000    12             0.264 0.039            0.517             0.226                           0.000 553.649
+     4  0.500    12             0.307 0.042            0.517             0.253                           0.072 543.909
+     4  1.000    12             0.284 0.047            0.517             0.236                           0.061 533.124
+     4  2.000    12             0.269 0.058            0.517             0.237                           0.060 545.408
+     7  0.000    12             0.290 0.044            0.456             0.213                           0.000 739.571
+     7  0.500    12             0.243 0.027            0.456             0.194                           0.052 740.896
+     7  1.000    12             0.296 0.053            0.456             0.235                           0.089 736.946
+     7  2.000    12             0.303 0.048            0.456             0.250                           0.128 741.261
+
+--- m5_trend.csv ---
+ trend of cooperation gene with bonus (rho)     p  runs
+                                      0.128 0.126   144
+
+--- m6_model1_vs_model2.csv ---
+  model  level  genes  genes that separate from drift  largest gene-to-offspring correlation gene with the largest correlation
+Model 1      1      5                               1                                  0.006                           Farming
+Model 1      2      5                               4                                  0.017                           Farming
+Model 1      3      5                               1                                  0.006                           Farming
+Model 1      4      5                               1                                  0.004                           Farming
+Model 1      5      5                               1                                  0.004                           Farming
+Model 2      1      8                               6                                  0.031                            Vision
+Model 2      2      8                               5                                  0.068                            Vision
+Model 2      3      8                               6                                  0.080                            Vision
+Model 2      4      8                               5                                  0.076                            Vision
+Model 2      5      8                               5                                  0.080                            Vision
+Model 2      6      8                               5                                  0.072                            Vision
+Model 2      7      8                               5                                  0.068                            Vision
+
+--- m8_raiders_vs_farmers.csv ---
+condition    side  runs  share of food from raids  share of food from raids ±  share of time on rival land  share of time on rival land ±  stolen per agent per 100 steps  stolen per agent per 100 steps ±  population  population ±  share of food from raids, first 300 steps  share of food from raids, first 300 steps ±  runs survived  runs ended larger  final expansion gene  final cooperation gene  final body size gene  final risk tolerance gene
+ evolving raiders    20                     0.044                       0.014                        0.043                          0.014                           7.176                             2.344     229.684        14.402                                      0.122                                        0.021             20                 14                 0.889                   0.103                 0.680                      0.868
+ evolving farmers    20                     0.000                       0.000                        0.000                          0.000                           2.120                             0.748     220.442         9.255                                      0.000                                        0.000             20                  5                 0.091                   0.774                 0.241                      0.323
+   frozen raiders    20                     0.072                       0.011                        0.073                          0.011                          11.749                             1.741     246.338        12.382                                      0.110                                        0.014             20                 13                 0.943                   0.056                 0.804                      0.900
+   frozen farmers    20                     0.000                       0.000                        0.000                          0.000                           3.302                             0.585     230.325         8.394                                      0.000                                        0.000             20                  7                 0.049                   0.799                 0.200                      0.301
+  swapped raiders    20                     0.001                       0.001                        0.001                          0.000                           0.117                             0.063     435.651         9.947                                      0.005                                        0.001             20                 20                 0.890                   0.093                 0.682                      0.869
+  swapped farmers    20                     0.000                       0.000                        0.000                          0.000                           0.102                             0.065      57.731        19.724                                      0.000                                        0.000             15                  0                 0.120                   0.765                 0.172                      0.304
+   random raiders    20                     0.008                       0.005                        0.007                          0.005                           1.766                             0.736     175.683        59.286                                      0.017                                        0.006             20                  4                 0.595                   0.347                 0.277                      0.524
+   random farmers    20                     0.002                       0.001                        0.002                          0.001                           0.776                             0.328     392.162        41.307                                      0.001                                        0.000             20                 16                 0.478                   0.283                 0.334                      0.553

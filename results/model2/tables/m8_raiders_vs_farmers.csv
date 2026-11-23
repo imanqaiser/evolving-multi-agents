@@ -1,0 +1,9 @@
+condition,side,runs,share of food from raids,share of food from raids ±,share of time on rival land,share of time on rival land ±,stolen per agent per 100 steps,stolen per agent per 100 steps ±,population,population ±,"share of food from raids, first 300 steps","share of food from raids, first 300 steps ±",runs survived,runs ended larger,final expansion gene,final cooperation gene,final body size gene,final risk tolerance gene
+evolving,raiders,20,0.04448,0.01357,0.0435,0.01354,7.176,2.344,229.7,14.4,0.1221,0.02115,20,14,0.889,0.1025,0.6796,0.8678
+evolving,farmers,20,0,0,0,0,2.12,0.7478,220.4,9.255,0,0,20,5,0.09131,0.7737,0.2405,0.3229
+frozen,raiders,20,0.07233,0.01053,0.073,0.01063,11.75,1.741,246.3,12.38,0.1096,0.01393,20,13,0.9426,0.05584,0.8035,0.8996
+frozen,farmers,20,0,0,0,0,3.302,0.5853,230.3,8.394,0,0,20,7,0.04921,0.7985,0.2001,0.3015
+swapped,raiders,20,0.0009302,0.0005002,0.001124,0.0004518,0.1167,0.0631,435.7,9.947,0.004676,0.001244,20,20,0.8901,0.09278,0.6821,0.8695
+swapped,farmers,20,0,0,0,0,0.1015,0.06487,57.73,19.72,9.089e-06,1.902e-05,15,0,0.1198,0.765,0.1723,0.3042
+random,raiders,20,0.008032,0.005066,0.007046,0.004892,1.766,0.7359,175.7,59.29,0.01737,0.005829,20,4,0.5952,0.3465,0.2766,0.5237
+random,farmers,20,0.001677,0.001462,0.001782,0.001483,0.7764,0.3283,392.2,41.31,0.0008057,0.0003349,20,16,0.4778,0.2827,0.3336,0.5525
