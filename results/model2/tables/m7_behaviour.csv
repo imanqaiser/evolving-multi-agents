@@ -1,0 +1,17 @@
+measure,neutral,selection
+rich population,430.3,392.2
+rich food from farms,0.6877,0.7464
+rich food from raids,0.00295,0.001677
+rich time in shared land,0.3274,0.2611
+rich time on rival land,0.003346,0.001782
+rich stolen per agent per 100 steps,1.182,0.7764
+rich cooperation rate,0.3942,0.2001
+rich survived,1,1
+poor population,194.7,175.7
+poor food from farms,0.8571,0.6454
+poor food from raids,0.001763,0.008032
+poor time in shared land,0.1506,0.3657
+poor time on rival land,0.001867,0.007046
+poor stolen per agent per 100 steps,2.144,1.766
+poor cooperation rate,0.3937,0.2297
+poor survived,1,1

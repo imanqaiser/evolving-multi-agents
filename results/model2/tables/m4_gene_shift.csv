@@ -1,0 +1,17 @@
+gene,shock,before,after,if it had not switched,where it was heading,shift vs no switch,low,high,p,share of the gap covered
+Exploration,plenty then scarcity,0.05211,0.05415,0.02839,0.06977,0.02576,0.01321,0.03831,0.0004343,
+Exploration,scarcity then plenty,0.1424,0.05441,0.06977,0.02839,-0.01535,-0.03655,0.005843,0.1489,
+Risk tolerance,plenty then scarcity,0.5952,0.6362,0.6234,0.6315,0.01274,-0.09997,0.1255,0.8173,
+Risk tolerance,scarcity then plenty,0.6159,0.6465,0.6315,0.6234,0.01506,-0.07929,0.1094,0.7459,
+Sociability,plenty then scarcity,0.6153,0.706,0.6488,0.7064,0.05713,-0.032,0.1463,0.1999,0.992
+Sociability,scarcity then plenty,0.6845,0.6972,0.7064,0.6488,-0.009238,-0.09217,0.07369,0.8212,0.1604
+Cooperation,plenty then scarcity,0.247,0.1768,0.1988,0.2383,-0.02204,-0.06477,0.02069,0.2996,
+Cooperation,scarcity then plenty,0.2706,0.2681,0.2383,0.1988,0.02979,-0.05953,0.1191,0.4998,
+Farming,plenty then scarcity,0.5756,0.561,0.5765,0.5063,-0.01552,-0.1299,0.09886,0.7818,0.221
+Farming,scarcity then plenty,0.5023,0.5594,0.5063,0.5765,0.05313,-0.07224,0.1785,0.3925,0.7567
+Vision,plenty then scarcity,0.541,0.3582,0.4989,0.3372,-0.1407,-0.1752,-0.1062,5.521e-08,0.8705
+Vision,scarcity then plenty,0.3877,0.4568,0.3372,0.4989,0.1195,0.07985,0.1592,1.304e-06,0.7394
+Body size,plenty then scarcity,0.408,0.207,0.2381,0.1041,-0.0311,-0.1226,0.06043,0.4911,0.232
+Body size,scarcity then plenty,0.1676,0.1547,0.1041,0.2381,0.05064,0.01203,0.08925,0.01202,0.3778
+Expansion,plenty then scarcity,0.4642,0.5301,0.4465,0.4794,0.08366,-0.01776,0.1851,0.1022,
+Expansion,scarcity then plenty,0.4583,0.4275,0.4794,0.4465,-0.0519,-0.1757,0.07189,0.3957,

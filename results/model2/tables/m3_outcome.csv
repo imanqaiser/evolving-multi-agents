@@ -1,0 +1,7 @@
+level,mode,runs,plenty veterans' final share,±,runs plenty veterans larger,runs scarcity veterans larger,sign test p,plenty veterans died out,scarcity veterans died out
+1,frozen,20,0.6388,0.1927,15,5,0.04139,4,8
+1,evolving,20,0.612,0.1724,14,6,0.1153,3,4
+4,frozen,20,0.5851,0.2239,11,9,0.8238,6,11
+4,evolving,20,0.6,0.2352,12,8,0.5034,8,12
+7,frozen,20,0.6699,0.2112,14,6,0.1153,4,11
+7,evolving,20,0.6059,0.2226,12,8,0.5034,7,11

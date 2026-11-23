@@ -87,6 +87,15 @@ class SocietyAgent(mesa.Agent):
                               + model.param("BODY_COST") * self.traits["body_size"])
             self.strength = model.param("BODY_BASE") + self.traits["body_size"]
         self.sight_radius = config.VISION_MIN_RADIUS  # Radius used on the latest turn.
+        # Three-zone map: how many rows into the rival homeland this agent is
+        # willing to go, set at birth from its expansion gene. A value between
+        # two whole rows is rounded up or down at random, in proportion.
+        self.reach = 0
+        if model.zones:
+            exact = self.traits["expansion"] * model.param("EXPANSION_MAX_ROWS")
+            self.reach = int(exact)
+            if self.random.random() < exact - self.reach:
+                self.reach += 1
 
     # model.cell_agents is a lookup table: position → list of living agents there.
     # It lets an agent check only the nine nearby cells instead of every agent.
@@ -191,7 +200,11 @@ class SocietyAgent(mesa.Agent):
         environment = self.model.environment
         on_own_farm = self.model.farms.get(self.position) == self.population
         saving_up = self.resources < self.model.param("REPRODUCTION_THRESHOLD")
-        if on_own_farm and saving_up and self.random.random() < self.traits["farming_tendency"]:
+        # On the three-zone map there is no forced staying: soil wears out, so
+        # the agent simply compares its farm with the other cells it can see,
+        # and the farming gene only decides whether it PLANTS (see farm()).
+        if (on_own_farm and saving_up and not self.model.zones
+                and self.random.random() < self.traits["farming_tendency"]):
             destination = self.position
             reason = "stayed to tend its population's farm"
             rival_note = ""
@@ -335,7 +348,7 @@ class SocietyAgent(mesa.Agent):
         rival_farms = False
         for cell in model.fertile_cells(self.position, radius):
             food = model.food[cell]
-            if food <= 0 or not model.may_enter(self.population, cell):
+            if food <= 0 or not model.may_enter(self, cell):
                 continue
             if avoiding and self.close_to_rival(cell, rival_positions):
                 continue
@@ -381,7 +394,7 @@ class SocietyAgent(mesa.Agent):
         # turn's basic survival cost. Exploring jumps to just beyond the edge
         # of sight (radius + 1 cells away), paying for every cell.
         poor = best_value < environment["survival_cost"]
-        far_cells = [cell for cell in self.cells_at_distance(radius + 1) if model.may_enter(self.population, cell)]
+        far_cells = [cell for cell in self.cells_at_distance(radius + 1) if model.may_enter(self, cell)]
         if poor and far_cells and self.random.random() < self.traits["exploratory_tendency"]:
             destination = self.random.choice(far_cells)
             reason = f"explored: the best food in view was worth only {best_value:.2f}"
@@ -391,7 +404,7 @@ class SocietyAgent(mesa.Agent):
         else:
             neighbors = []
             for position in model.cells_around(self.position):
-                if (position != self.position and model.may_enter(self.population, position)
+                if (position != self.position and model.may_enter(self, position)
                         and not (avoiding and self.close_to_rival(position, rival_positions))):
                     neighbors.append(position)
             if neighbors:
@@ -525,11 +538,11 @@ class SocietyAgent(mesa.Agent):
             note = " Worked its population's farm."
             free_cells = []
             for position in model.cells_around(self.position):
-                if model.can_plant(position):
+                if model.can_plant(position, self.population):
                     free_cells.append(position)
             if free_cells:
                 site = self.random.choice(free_cells)
-        elif model.can_plant(self.position):
+        elif model.can_plant(self.position, self.population):
             site = self.position
 
         if site is None or self.resources < model.param("PLANT_MIN_RESOURCES"):
@@ -561,7 +574,7 @@ class SocietyModel(mesa.Model):
     #   record_every      headless runs save a data row every this many timesteps.
     def __init__(self, environment_name=config.DEFAULT_ENVIRONMENT, world_name=config.DEFAULT_WORLD,
                  seed=None, headless=False, neutral=False, overrides=None, gene_pools=None,
-                 frozen_genomes=False, record_every=1, version=1):
+                 frozen_genomes=False, record_every=1, version=1, zones=False):
         # A seed makes Reset repeat the same sequence of random choices.
         if seed is None:
             seed = config.SEED
@@ -575,7 +588,7 @@ class SocietyModel(mesa.Model):
         # uses Model 2's seven abundance levels. Explicit overrides still win.
         self.version = version
         if version == 2:
-            overrides = {**config.MODEL_2, **(overrides or {})}
+            overrides = {**config.MODEL_2, **(config.MODEL_2_ZONES if zones else {}), **(overrides or {})}
             environment_name = config.model2_environment_name(environment_name)
         environment_name = config.environment_name(environment_name)
         self.environment_name = environment_name
@@ -605,12 +618,18 @@ class SocietyModel(mesa.Model):
         self.body_genes = self.param("BODY_GENES")
         self.homeland_band = self.param("HOMELAND_BAND")
         self.soil = self.param("SOIL_ENABLED")
+        # The three-zone map needs room for two homelands and the shared land,
+        # so the 3 by 3 debug world never uses it.
+        self.zones = bool(self.param("ZONES")) and self.world["grid_size"] >= 20
         self.genes = list(config.GENES)  # The genome: five genes, or seven with the body genes.
         if self.body_genes:
             self.genes += config.BODY_GENE_NAMES
+        if self.zones:
+            self.genes += config.ZONE_GENE_NAMES
         if self.param("CHILD_STARTING_RESOURCES") != 2 * self.param("REPRODUCTION_COST_PER_PARENT"):
             raise ValueError("Child starting resources must equal both parents' combined contributions.")
         self.grid_size = self.world["grid_size"]
+        self.around_cache = {}  # See cells_around().
         self.food = {}
         self.capacity = {}
         self.cell_agents = {}  # Position → living agents there. See SocietyAgent.position.
@@ -634,7 +653,44 @@ class SocietyModel(mesa.Model):
             self.food[position] = self.environment["food_per_patch"]
             self.capacity[position] = self.environment["food_per_patch"]
         # Remember the wild capacity, so an abandoned farm can return to it.
+        # wild_capacity > 0 also marks a cell as fertile (plantable) land.
         self.wild_capacity = self.capacity.copy()
+        # Three zones: rows 0 .. shared_first-1 are homeland A, the next
+        # SHARED_ROWS rows are the shared land, the rest are homeland B.
+        # row_zone[row] is "A", "S" (shared) or "B".
+        self.row_zone = None
+        self.unplanted_capacity = self.wild_capacity
+        if self.zones:
+            shared_rows = self.param("SHARED_ROWS")
+            self.shared_first = (self.grid_size - shared_rows) // 2
+            self.shared_last = self.shared_first + shared_rows - 1
+            self.row_zone = []
+            for row in range(self.grid_size):
+                if row < self.shared_first:
+                    self.row_zone.append("A")
+                elif row <= self.shared_last:
+                    self.row_zone.append("S")
+                else:
+                    self.row_zone.append("B")
+            # Homelands have no wild food: fertile cells there stay empty until
+            # somebody plants a farm, and go back to empty when it is abandoned.
+            self.unplanted_capacity = self.wild_capacity.copy()
+            for position in self.capacity:
+                if self.row_zone[position[0]] != "S" and self.wild_capacity[position] > 0:
+                    self.food[position] = 0.0
+                    self.capacity[position] = 0.0
+                    self.unplanted_capacity[position] = 0.0
+            # Wild regrowth in the shared land is the same at every level.
+            if "regeneration" not in (overrides or {}):
+                self.environment["regeneration"] = self.param("SHARED_REGENERATION")
+        # Farm growth per population (the same for both unless HOMELAND_LEVELS is set).
+        self.set_farm_growth()
+        # Counters for the three-zone analysis (all cumulative).
+        self.food_from = {p: {"farm": 0.0, "wild": 0.0, "raid": 0.0} for p in "AB"}
+        self.zone_steps = {p: {"home": 0, "shared": 0, "rival": 0} for p in "AB"}
+        self.encounters_in = {"A": 0, "S": 0, "B": 0}
+        self.fights_in = {"A": 0, "S": 0, "B": 0}
+        self.encounter_rows = [0] * self.grid_size
         # Soil (Model 2): every fertile cell has a fertility between 0 and 1
         # that multiplies farm growth there. It belongs to the cell, so it
         # stays when a farm is abandoned and planted again. See update_soil().
@@ -654,6 +710,8 @@ class SocietyModel(mesa.Model):
             starting_agents = []
             half = self.grid_size // 2
             halves = [("A", 0, half), ("B", half, self.grid_size)]
+            if self.zones:  # Everyone starts in its own homeland.
+                halves = [("A", 0, self.shared_first), ("B", self.shared_last + 1, self.grid_size)]
             if self.param("INTERLEAVED_START"):
                 halves = [("A", 0, self.grid_size), ("B", 0, self.grid_size)]
             for population, first_row, last_row in halves:
@@ -760,6 +818,14 @@ class SocietyModel(mesa.Model):
                 column = f"Population {population} average {trait}"
                 reporters[column] = f"{population}_average_{trait}"
         reporters["Average fertility"] = "average_fertility"
+        for population in ["A", "B"]:
+            for source in ["farm", "wild", "raid"]:
+                reporters[f"Population {population} food {source}"] = f"{population}_food_{source}"
+            for zone in ["home", "shared", "rival"]:
+                reporters[f"Population {population} steps {zone}"] = f"{population}_steps_{zone}"
+        for zone, label in [("A", "homeland A"), ("S", "shared land"), ("B", "homeland B")]:
+            reporters[f"Encounters in {label}"] = f"encounters_in_{zone}"
+            reporters[f"Fights in {label}"] = f"fights_in_{zone}"
         self.datacollector = DataCollector(model_reporters=reporters)
         self.collect_data()
 
@@ -785,7 +851,21 @@ class SocietyModel(mesa.Model):
         name = config.environment_name(name_or_level)
         self.environment_name = name
         for setting in ["level", "multiplier", "regeneration", "farm_growth"]:
+            if setting == "regeneration" and self.zones:
+                continue  # The shared land does not change with the level.
             self.environment[setting] = config.ENVIRONMENTS[name][setting]
+        self.set_farm_growth()
+
+    # Farm growth per timestep for each population's farms. Normally both use
+    # the environment's value. HOMELAND_LEVELS (experiment M7) gives each
+    # population's homeland its own Model 2 abundance level.
+    def set_farm_growth(self):
+        growth = self.environment["farm_growth"]
+        self.farm_growth = {"A": growth, "B": growth}
+        levels = self.param("HOMELAND_LEVELS")
+        if levels:
+            for population, level in levels.items():
+                self.farm_growth[population] = config.BASE_FARM_GROWTH * config.M2_MULTIPLIERS[level]
 
     # Save one row describing an agent's whole life. Called when it dies.
     def record_lifetime(self, agent, cause):
@@ -818,18 +898,35 @@ class SocietyModel(mesa.Model):
     # Radius 1 is the 3 by 3 area an agent can see.
     # max() and min() keep the row and column inside the grid edges.
     def cells_around(self, position, radius=1):
+        # The grid never changes, so each answer is worked out once and remembered.
+        key = (position, radius)
+        if key in self.around_cache:
+            return self.around_cache[key]
         row, column = position
         cells = []
         for nearby_row in range(max(0, row - radius), min(self.grid_size, row + radius + 1)):
             for nearby_column in range(max(0, column - radius), min(self.grid_size, column + radius + 1)):
                 cells.append((nearby_row, nearby_column))
+        self.around_cache[key] = cells
         return cells
 
     # Homelands (an option, off by default; see config.HOMELAND_BAND). Population
     # A lives in the top half and B in the bottom half. Each may also enter a
     # band of HOMELAND_BAND rows on the other side of the middle line, so the
     # two populations share a border zone but neither can be pushed off its land.
-    def may_enter(self, population, cell):
+    #
+    # Three-zone map (config.ZONES): an agent may always enter its own homeland
+    # and the shared land. It may enter the rival homeland only as deep as its
+    # expansion gene allows (agent.reach rows past the shared land).
+    def may_enter(self, agent, cell):
+        population = agent.population
+        if self.zones:
+            zone = self.row_zone[cell[0]]
+            if zone == "S" or zone == population:
+                return True
+            if population == "A":
+                return cell[0] - self.shared_last <= agent.reach
+            return self.shared_first - cell[0] <= agent.reach
         band = self.homeland_band
         if band is None:
             return True
@@ -869,7 +966,10 @@ class SocietyModel(mesa.Model):
         return owner is not None and owner != population
 
     # Fertile land that nobody farms yet: a wild patch without an owner.
-    def can_plant(self, position):
+    # On the three-zone map a population may only plant in its own homeland.
+    def can_plant(self, position, population=None):
+        if self.zones and population is not None and self.row_zone[position[0]] != population:
+            return False
         return self.wild_capacity[position] > 0 and position not in self.farms
 
     # Turn a wild patch into a farm. It keeps its food and grows faster from now on.
@@ -889,7 +989,7 @@ class SocietyModel(mesa.Model):
                 population = self.farms[position]
                 del self.farms[position]
                 del self.farm_last_worked[position]
-                self.capacity[position] = self.wild_capacity[position]
+                self.capacity[position] = self.unplanted_capacity[position]
                 self.food[position] = min(self.food[position], self.capacity[position])
                 self.add_event("farm", f"Population {population}'s farm was abandoned", [], position)
 
@@ -926,6 +1026,15 @@ class SocietyModel(mesa.Model):
                     agent.turn_food_note += f" Split {food:.2f} food with {len(agents) - 1} other(s)."
 
             owner = self.farms.get(position)
+            # Where each population's food comes from: its own farms, wild
+            # food, or the other population's farms (raids).
+            for agent in agents:
+                if owner is None:
+                    self.food_from[agent.population]["wild"] += agent.turn_food
+                elif owner == agent.population:
+                    self.food_from[agent.population]["farm"] += agent.turn_food
+                else:
+                    self.food_from[agent.population]["raid"] += agent.turn_food
             if owner is None or food == 0:
                 continue
             self.harvested.add(position)  # Wears out the soil (Model 2). See update_soil().
@@ -1007,12 +1116,18 @@ class SocietyModel(mesa.Model):
                     agent.turn_fight_cost += self.param("FIGHT_COST")
                     if self.body_genes:
                         # Model 2: body size decides fights; this replaces Model 1's wealth weighting.
-                        weights.append(agent.strength)
+                        weight = agent.strength
+                        # Defender's advantage: stronger on its own homeland.
+                        if self.zones and self.row_zone[agent.position[0]] == agent.population:
+                            weight *= self.param("DEFENDER_ADVANTAGE")
+                        weights.append(weight)
                     else:
                         weights.append(max(agent.current_resources(), 0.1))
                 robber = self.random.choices(fighting, weights=weights)[0]
                 self.fights_this_step += 1
                 self.cumulative_fights += 1
+                if self.zones:
+                    self.fights_in[self.row_zone[second.position[0]]] += 1
         victim = second if robber is first else first
         self.rob(robber, victim, fought)
 
@@ -1200,6 +1315,10 @@ class SocietyModel(mesa.Model):
             self.encounter_pairs.add(pair)
             self.encounters_per_timestep += 1
             self.cumulative_encounters += 1
+            # Where it happened: "second" is the agent that was already there.
+            self.encounter_rows[second.position[0]] += 1
+            if self.zones:
+                self.encounters_in[self.row_zone[second.position[0]]] += 1
             if self.headless:
                 self.confront(first, second)
                 continue
@@ -1270,10 +1389,17 @@ class SocietyModel(mesa.Model):
             self.average_resources = total_resources / len(self.agents)
             self.average_age = total_age / len(self.agents)
             self.average_generation = total_generation / len(self.agents)
+        for zone in ["A", "S", "B"]:
+            setattr(self, f"encounters_in_{zone}", self.encounters_in[zone])
+            setattr(self, f"fights_in_{zone}", self.fights_in[zone])
         self.average_fertility = 1.0
         if self.soil and self.fertile:
             self.average_fertility = sum(self.fertility.values()) / len(self.fertile)
         for population in ["A", "B"]:
+            for source, amount in self.food_from[population].items():
+                setattr(self, f"{population}_food_{source}", amount)
+            for zone, count in self.zone_steps[population].items():
+                setattr(self, f"{population}_steps_{zone}", count)
             setattr(self, f"{population}_moves", self.moves[population])
             setattr(self, f"{population}_trades", self.trades[population])
             for trait in self.genes:
@@ -1314,6 +1440,14 @@ class SocietyModel(mesa.Model):
         for agent in self.agents:
             agent.start_turn()
             self.agent_steps[agent.population] += 1
+            if self.zones:
+                zone = self.row_zone[agent.position[0]]
+                if zone == "S":
+                    self.zone_steps[agent.population]["shared"] += 1
+                elif zone == agent.population:
+                    self.zone_steps[agent.population]["home"] += 1
+                else:
+                    self.zone_steps[agent.population]["rival"] += 1
         # Phase 1: shuffle_do calls each living agent's step() once, in a random order.
         self.agents.shuffle_do("step")
         # Phase 2: divide the food in every occupied cell.
@@ -1342,7 +1476,7 @@ class SocietyModel(mesa.Model):
                 continue  # Barren land: nothing to grow.
             growth = regeneration
             if position in self.farms:
-                growth = farm_growth
+                growth = self.farm_growth[self.farms[position]]
                 if self.soil:
                     growth *= self.fertility[position]
             self.food[position] = min(capacity, before + growth)

@@ -23,9 +23,10 @@ from common import RESULTS, STEPS, run_batch
 import config
 
 FOLDER = os.path.join(RESULTS, "model2")
-GENES = config.GENES + config.BODY_GENE_NAMES
+ZONES = os.environ.get("ZONES") == "1"   # ZONES=1 python m_calibrate.py ... pilots the three-zone map.
+GENES = config.GENES + config.BODY_GENE_NAMES + (config.ZONE_GENE_NAMES if ZONES else [])
 SHORT = {"exploratory_tendency": "expl", "risk_tolerance": "risk", "sociability": "soc",
-         "cooperative_tendency": "coop", "farming_tendency": "farm", "vision": "vis", "body_size": "body"}
+         "cooperative_tendency": "coop", "farming_tendency": "farm", "vision": "vis", "body_size": "body", "expansion": "expa"}
 
 
 # The settings of one pilot run at a given abundance multiplier.
@@ -33,9 +34,14 @@ def pilot_spec(label, multiplier, seed, overrides=None, neutral=False, steps=STE
     settings = {"regeneration": config.BASE_REGENERATION * multiplier,
                 "farm_growth": config.BASE_FARM_GROWTH * multiplier}
     settings.update(overrides or {})
-    return {"experiment": "m_calibration", "condition": label, "level": 4, "seed": seed, "version": 2,
+    spec = {"experiment": "m_calibration", "condition": label, "level": 4, "seed": seed, "version": 2,
             "overrides": settings, "neutral": neutral, "keep_lifetimes": True, "steps": steps,
             "labels": {"multiplier": multiplier}}
+    if ZONES:
+        # Three-zone map: the multiplier scales homeland farm growth only.
+        spec["zones"] = True
+        del settings["regeneration"]
+    return spec
 
 
 # The numbers every pilot reports for one finished run (second half of the run).
@@ -61,6 +67,14 @@ def measure(result):
         "starve": change("Deaths from starvation") / max(1, change("Deaths from starvation")
                                                          + change("Deaths from old age")),
     }
+    if ZONES:
+        food = {s: sum(change(f"Population {p} food {s}") for p in "AB") for s in ["farm", "wild", "raid"]}
+        where = {s: sum(change(f"Population {p} steps {s}") for p in "AB") for s in ["home", "shared", "rival"]}
+        out["farmfood"] = food["farm"] / max(1e-9, sum(food.values()))
+        out["raidfood"] = food["raid"] / max(1e-9, sum(food.values()))
+        out["rivaltime"] = where["rival"] / max(1, sum(where.values()))
+        out["homeenc"] = (change("Encounters in homeland A") + change("Encounters in homeland B")) / max(
+            1, change("Cumulative encounters"))
     total = last["Population A"] + last["Population B"]
     for gene in GENES:
         out[SHORT[gene]] = sum(last[f"Population {p}"] * last[f"Population {p} average {gene}"]
@@ -110,6 +124,8 @@ def report(title, specs, columns):
 
 
 BASIC = ["agents", "smaller", "both", "enc", "enc/100", "move", "soil", "gens", "starve"]
+if ZONES:
+    BASIC += ["farmfood", "raidfood", "rivaltime", "homeenc"]
 GENE_COLUMNS = [SHORT[gene] for gene in GENES]
 SELECTION = ["top/bottom", "max|rho|"]
 
@@ -142,6 +158,8 @@ if __name__ == "__main__":
                 settings[name] = value
             else:
                 settings[name] = float(value) if "." in value else int(value)
+            if name == "HOMELAND_LEVELS":   # written as HOMELAND_LEVELS=71 for A at level 7, B at level 1
+                settings[name] = {"A": int(value[0]), "B": int(value[1])}
         for multiplier in [float(value) for value in sys.argv[4:]]:
             for seed in seeds:
                 specs.append(pilot_spec(sys.argv[3] or "frozen settings", multiplier, seed, settings, neutral))

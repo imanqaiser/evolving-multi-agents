@@ -1,0 +1,5 @@
+condition,runs,agents at 1200,agents at 1300,agents at 1400,agents at 1800,agents at 2400,runs that lost a population
+plenty then scarcity,15,796.9,268.9,261.9,286.5,314.1,4
+scarcity then plenty,15,409.3,648.9,571.5,653.6,656.3,0
+always plenty,15,796.9,744.5,711.9,695.1,741.6,0
+always scarcity,15,409.3,410.1,396.8,415,410.7,0

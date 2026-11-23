@@ -119,3 +119,19 @@ SOIL_RECOVERY=0.02,VISION_COST=0.02,HOMELAND_BAND=5,BODY_COST=0.05  1.00        
 SOIL_RECOVERY=0.02,VISION_COST=0.02,HOMELAND_BAND=5,BODY_COST=0.05  2.80        379        166          1   7.51e+03       1.99      0.396      0.296        245      0.677     0.0146      0.557      0.703      0.219     0.0561      0.651      0.435       8.15     0.0632
 SOIL_RECOVERY=0.02,VISION_COST=0.02,HOMELAND_BAND=5,BODY_COST=0.05  8.00        431        176          1   1.66e+04       3.85      0.428      0.116        244      0.703     0.0179      0.636      0.636      0.125       0.03      0.627      0.614       12.7     0.0525
 
+== Custom pilot ==  (mean of 6 calibration seeds per row, second half of a 2000-step run)
+condition                           mult     agents    smaller       both        enc    enc/100       move       soil       gens     starve   farmfood   raidfood  rivaltime    homeenc       expl       risk        soc       coop       farm        vis       body       expa top/bottom   max|rho|
+frozen settings                     0.80        389       91.4          1   2.61e+03      0.716      0.438      0.939        282      0.117      0.483    0.00234     0.0028      0.274     0.0745      0.717      0.508      0.219      0.548      0.336      0.105      0.413       1.87     0.0512
+frozen settings                     2.50        524        134          1   2.31e+03      0.463      0.389      0.667        280      0.427       0.62    0.00276    0.00266      0.457     0.0732      0.573      0.535      0.299      0.651      0.391      0.182      0.549       5.26     0.0854
+frozen settings                     8.00        744        310          1   9.92e+03       1.32      0.433      0.364        278      0.606      0.737    0.00785    0.00616      0.646     0.0288       0.62      0.627      0.312      0.616      0.546        0.4      0.393       11.9     0.0645
+
+== Custom pilot ==  (mean of 6 calibration seeds per row, second half of a 2000-step run)
+condition                           mult     agents    smaller       both        enc    enc/100       move       soil       gens     starve   farmfood   raidfood  rivaltime    homeenc       expl       risk        soc       coop       farm        vis       body       expa top/bottom   max|rho|
+neutral=1                           0.80        549        199          1   1.12e+04       2.02      0.672      0.936        288      0.242      0.688    0.00321     0.0037      0.229      0.463      0.532      0.521      0.539      0.549      0.439      0.606      0.501       2.48      0.014
+neutral=1                           2.50        685        279          1   1.34e+04       1.95      0.686      0.452        293      0.235      0.753    0.00281    0.00317      0.205        0.5      0.492      0.507      0.489      0.463      0.562      0.416      0.501       2.47     0.0114
+neutral=1                           8.00        748        333          1   2.04e+04       2.73      0.596      0.298        286      0.633      0.767    0.00471    0.00461      0.254      0.453      0.376      0.495      0.443      0.504      0.491      0.436      0.461       10.7     0.0203
+
+== Custom pilot ==  (mean of 3 calibration seeds per row, second half of a 2000-step run)
+condition                           mult     agents    smaller       both        enc    enc/100       move       soil       gens     starve   farmfood   raidfood  rivaltime    homeenc       expl       risk        soc       coop       farm        vis       body       expa top/bottom   max|rho|
+HOMELAND_LEVELS=71                  2.50        522        115          1   6.08e+03       1.12      0.406      0.653        289      0.482      0.614    0.00311    0.00252      0.336     0.0763      0.584      0.648      0.183      0.549      0.444      0.128       0.37       7.17     0.0818
+

@@ -15,6 +15,9 @@ WORLDS = {
     "SMALL": {"grid_size": 3, "print_turns": True},
     "LARGE": {"grid_size": 30, "agents_per_population": 30, "print_turns": False},
     "EXPERIMENT": {"grid_size": 50, "agents_per_population": 60, "print_turns": False},
+    # ZONED is the world the three-zone Model 2 experiments use: larger, so each
+    # homeland and the shared land all hold enough agents for selection to show.
+    "ZONED": {"grid_size": 70, "agents_per_population": 120, "print_turns": False},
 }
 
 # The genome: five tendencies between 0 and 1 (see SocietyAgent in model.py).
@@ -153,9 +156,31 @@ INTERLEAVED_START = False
 # rows, that each population may enter on the other side of the middle line.
 HOMELAND_BAND = None
 
+# 6. The three-zone map (the final Model 2 map; see DESIGN.md, "Three zones").
+#   Homeland A (top rows)      no wild food; only population A may plant farms here
+#   Shared land (middle rows)  wild food regrows here and nowhere else; no farms
+#   Homeland B (bottom rows)   no wild food; only population B may plant farms here
+# Scarcity is then HOMELAND productivity: the abundance multiplier scales
+# farm growth only, and wild regrowth in the shared land is one fixed value.
+ZONES = False
+SHARED_ROWS = 16             # Rows of shared land in the middle of the grid (about a third).
+SHARED_REGENERATION = 0.3    # Wild regrowth per patch per timestep in the shared land, at every level.
+# The eighth gene, "expansion": how many rows into the RIVAL homeland an agent
+# is willing to go (to raid farms). 0 = never leaves its homeland and the
+# shared land; 1 = up to EXPANSION_MAX_ROWS rows in. The rows beyond that are
+# a protected core no rival can reach, so neither population can be wiped out.
+ZONE_GENE_NAMES = ["expansion"]
+EXPANSION_MAX_ROWS = 10
+# Defender's advantage: an agent fighting on its own homeland has its strength
+# multiplied by this in a fight. 1 = no advantage.
+DEFENDER_ADVANTAGE = 1.0
+# Unequal homelands (experiment M7): {"A": level, "B": level} gives each
+# population's homeland its own abundance level. None = both use the run's level.
+HOMELAND_LEVELS = None
+
 # 5. Model 2's own abundance scale: seven levels on a ratio scale.
-# PLACEHOLDER values until calibration (experiments/m_calibrate.py) freezes them.
-M2_MULTIPLIERS = {1: 1.0, 2: 1.4, 3: 2.0, 4: 2.8, 5: 4.0, 6: 5.6, 7: 8.0}
+# Calibrated on pilot seeds (results/model2/calibration.txt), then frozen.
+M2_MULTIPLIERS = {1: 0.8, 2: 1.2, 3: 1.7, 4: 2.5, 5: 3.7, 6: 5.5, 7: 8.0}
 M2_NAMED_LEVELS = {"SCARCE": 1, "MIDDLE": 4, "PLENTIFUL": 7}
 
 for _level, _multiplier in M2_MULTIPLIERS.items():
@@ -183,8 +208,8 @@ def model2_environment_name(name_or_level):
 # Everything version=2 switches on. PLACEHOLDER numbers until calibration.
 MODEL_2 = {
     "BODY_GENES": True,
-    "VISION_COST": 0.05,
-    "BODY_COST": 0.2,
+    "VISION_COST": 0.02,
+    "BODY_COST": 0.05,
     "SELECTION_MODE": "fitness",
     "MATING_RADIUS": 3,
     "REPRODUCTION_THRESHOLD": 6.0,
@@ -192,6 +217,17 @@ MODEL_2 = {
     "CHILD_STARTING_RESOURCES": 6.0,
     "SOIL_ENABLED": True,
     "SOIL_DEPLETION": 0.02,
-    "SOIL_RECOVERY": 0.01,
+    "SOIL_RECOVERY": 0.02,
     "TRADE_BONUS": 0.5,
+}
+
+
+# What zones=True adds on top of MODEL_2: the three-zone map, the expansion
+# gene and the defender's advantage.
+MODEL_2_ZONES = {
+    "ZONES": True,
+    "SHARED_ROWS": 14,
+    "SHARED_REGENERATION": 0.6,
+    "EXPANSION_MAX_ROWS": 14,
+    "DEFENDER_ADVANTAGE": 2.0,
 }

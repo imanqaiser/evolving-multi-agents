@@ -1,0 +1,7 @@
+level,condition,runs,runs where both survive,median timestep of exclusion,smaller side's share at the end
+1,neutral,20,20,,0.4286
+1,selection,20,11,1160,0.1481
+4,neutral,20,20,,0.399
+4,selection,20,1,660,0.006122
+7,neutral,20,20,,0.3758
+7,selection,20,1,460,0.001336
