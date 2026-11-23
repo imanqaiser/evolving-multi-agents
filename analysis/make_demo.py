@@ -23,7 +23,7 @@ sys.path.insert(0, ROOT)
 import config  # noqa: E402
 from model import SocietyModel  # noqa: E402
 
-LEVEL = 2             # The level where the two populations keep meeting (see RESULTS.md, E2).
+LEVEL = 2             # The level where the two populations keep meeting.
 SEED = 1
 STEPS = 700          # One timestep per frame.
 FRAMES_PER_SECOND = 16   # 700 frames / 16 = about 44 seconds.

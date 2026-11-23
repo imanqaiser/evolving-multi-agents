@@ -1,7 +1,7 @@
 # Run with: python -m unittest -v test_reproduction
 # These checks use small, controlled worlds. They do not tune the real presets.
 # Farming tests set farming_tendency: since the fifth gene was added, tending and
-# planting no longer depend on risk_tolerance (see DESIGN.md).
+# planting no longer depend on risk_tolerance.
 import contextlib
 import io
 import unittest

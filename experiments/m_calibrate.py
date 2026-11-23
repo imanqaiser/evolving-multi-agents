@@ -1,8 +1,7 @@
 # Model 2 calibration pilots. Run BEFORE the Model 2 experiments, on seeds the
 # experiments never use (9000+). Every table printed here is also appended to
-# results/model2/calibration.txt, and DESIGN.md ("Model 2: calibration") says
-# which values were chosen from which table and why. After that the values in
-# config.MODEL_2 and config.M2_MULTIPLIERS are frozen.
+# results/model2/calibration.txt. After that the values in config.MODEL_2 and
+# config.M2_MULTIPLIERS are frozen.
 #
 # Each pilot checks that a MECHANISM works (a gene is not stuck at 0 or 1
 # everywhere, agents keep moving, the populations keep meeting, selection is

@@ -2,7 +2,7 @@
 # seeds the experiments never use (9000+). It sweeps the productivity
 # multiplier and prints, for each value, how many agents the world holds and
 # how many deaths are from starvation. The five levels in config.py were picked
-# from this table and then frozen. See DESIGN.md, "Calibration".
+# from this table and then frozen.
 #
 # Run with: python experiments/calibrate.py
 import sys

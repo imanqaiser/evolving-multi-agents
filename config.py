@@ -10,7 +10,7 @@ DEFAULT_WORLD = "SMALL"
 # probability "patch_density".
 # EXPERIMENT is the world every experiment in experiments/ uses: big enough
 # that even the scarcest abundance level holds 100+ agents, so selection is
-# not swamped by random drift (see DESIGN.md, "Calibration").
+# not swamped by random drift.
 WORLDS = {
     "SMALL": {"grid_size": 3, "print_turns": True},
     "LARGE": {"grid_size": 30, "agents_per_population": 30, "print_turns": False},
@@ -66,8 +66,8 @@ FARMS_ENABLED = True       # False (as a run override) turns planting off: wild 
 # The geography is the same at every level (same share of fertile cells, same
 # patch size). Only productivity changes: wild regrowth and farm growth are
 # both the base value times one multiplier. Level 1 is the scarcest, level 5
-# the most plentiful. The multipliers were calibrated once (see DESIGN.md,
-# "Calibration") and are frozen: do not tune them to change a result.
+# the most plentiful. The multipliers were calibrated once with
+# experiments/calibrate.py and are frozen: do not tune them to change a result.
 # ---------------------------------------------------------------------------
 BASE_REGENERATION = 0.15  # Wild food regrown per patch per timestep at multiplier 1.
 BASE_FARM_GROWTH = 0.7    # Farm food grown per farm per timestep at multiplier 1.
@@ -117,7 +117,7 @@ STARTING_AGENTS = [
 
 
 # ---------------------------------------------------------------------------
-# Model 2 (see DESIGN.md, "Model 2"). Every new mechanic sits behind a switch.
+# Model 2. Every new mechanic sits behind a switch.
 # With the defaults below every switch is off and the model is exactly Model 1.
 # SocietyModel(..., version=2) turns them all on by applying MODEL_2 (at the
 # end of this section) as overrides.
@@ -156,7 +156,7 @@ INTERLEAVED_START = False
 # rows, that each population may enter on the other side of the middle line.
 HOMELAND_BAND = None
 
-# 6. The three-zone map (the final Model 2 map; see DESIGN.md, "Three zones").
+# 6. The three-zone map (the final Model 2 map).
 #   Homeland A (top rows)      no wild food; only population A may plant farms here
 #   Shared land (middle rows)  wild food regrows here and nowhere else; no farms
 #   Homeland B (bottom rows)   no wild food; only population B may plant farms here
