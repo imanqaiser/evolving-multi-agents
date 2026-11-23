@@ -12,6 +12,7 @@
 #   m5   trade bonus: when does cooperation survive?
 #   m3   veterans of plenty against veterans of scarcity on an open map (needs m2).
 #   m8   Raiders vs Farmers: a hand-set (not evolved) starting point, see config.py.
+#   m9   the optional seed rule: seeds off, seeds to start, seeds always.
 #   pools  writes gene_pools/raiders.json and farmers.json for m8 and the dashboard.
 # Results go to results/model2/. PROCESSES=3 limits the CPU cores used.
 import gzip
@@ -189,6 +190,14 @@ if __name__ == "__main__":
                                    gene_pools={raider_side: raiders, farmer_side: farmers},
                                    overrides={"HOMELAND_LEVELS": levels},
                                    labels={"rich_side": rich, "raider_side": raider_side}))
+    elif name == "m9":
+        # Planting needs a seed (config.SEED_MODE). All three conditions start
+        # both populations in the same rows next to the shared land.
+        for level in NAMED.values():
+            for seed in SEEDS:
+                for condition, mode in [("seeds off", "off"), ("seeds to start", "start"), ("seeds always", "always")]:
+                    specs.append(zoned("M9", condition, level, seed, overrides={
+                        "SEED_MODE": mode, "BORDER_START_ROWS": config.M9_BORDER_START_ROWS}))
     else:
         raise SystemExit(f"Unknown experiment: {name}")
 

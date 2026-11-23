@@ -1,0 +1,18 @@
+measure,seeds to start: levels that differ (of 3),seeds always: levels that differ (of 3)
+agents,2,3
+both survive,1,1
+time share shared,3,3
+encounters per 100 agent-steps,2,2
+fights per encounter,0,2
+stolen per agent per 100 steps,2,2
+food share farm,3,3
+farms per agent,3,3
+seeds picked up per agent per 100 steps,3,3
+Exploration gene,0,2
+Risk tolerance gene,0,0
+Sociability gene,0,1
+Cooperation gene,1,1
+Farming gene,0,1
+Vision gene,1,2
+Body size gene,1,1
+Expansion gene,0,0

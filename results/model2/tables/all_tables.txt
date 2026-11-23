@@ -253,3 +253,140 @@ condition    side  runs  share of food from raids  share of food from raids ±  
   swapped farmers    20                     0.000                       0.000                        0.000                          0.000                           0.102                             0.065      57.731        19.724                                      0.000                                        0.000             15                  0                 0.120                   0.765                 0.172                      0.304
    random raiders    20                     0.008                       0.005                        0.007                          0.005                           1.766                             0.736     175.683        59.286                                      0.017                                        0.006             20                  4                 0.595                   0.347                 0.277                      0.524
    random farmers    20                     0.002                       0.001                        0.002                          0.001                           0.776                             0.328     392.162        41.307                                      0.001                                        0.000             20                 16                 0.478                   0.283                 0.334                      0.553
+
+--- m9_seed_rule.csv ---
+     condition  level  runs  runs both survive  agents  agents ±  time share shared  time share shared ±  encounters per 100 agent-steps  encounters per 100 agent-steps ±  fights per encounter  fights per encounter ±  stolen per agent per 100 steps  stolen per agent per 100 steps ±  food share farm  food share farm ±  farms per agent  farms per agent ±  seeds picked up per agent per 100 steps  seeds picked up per agent per 100 steps ±  Exploration gene  Risk tolerance gene  Sociability gene  Cooperation gene  Farming gene  Vision gene  Body size gene  Expansion gene
+     seeds off      1    20                 14 307.568    22.381              0.671                0.056                           0.491                             0.233                 0.283                   0.091                           0.474                             0.219            0.364              0.059            0.627              0.107                                    0.000                                      0.000             0.109                0.651             0.734             0.233         0.525        0.342           0.160           0.464
+     seeds off      4    20                 17 526.991    30.545              0.383                0.026                           1.195                             0.410                 0.180                   0.050                           1.461                             0.528            0.637              0.025            1.102              0.050                                    0.000                                      0.000             0.113                0.602             0.692             0.281         0.664        0.410           0.184           0.463
+     seeds off      7    20                 20 732.312    13.530              0.262                0.011                           1.552                             0.380                 0.183                   0.030                           1.983                             0.554            0.742              0.008            1.178              0.028                                    0.000                                      0.000             0.052                0.626             0.602             0.310         0.570        0.560           0.408           0.508
+seeds to start      1    20                 14 274.009    31.793              0.768                0.072                           0.623                             0.328                 0.279                   0.082                           0.538                             0.283            0.257              0.078            0.431              0.137                                    6.346                                      0.070             0.147                0.692             0.757             0.277         0.490        0.338           0.132           0.419
+seeds to start      4    20                 14 405.354    47.264              0.532                0.077                           0.688                             0.260                 0.247                   0.058                           0.694                             0.242            0.492              0.079            0.823              0.141                                    7.183                                      0.227             0.108                0.650             0.699             0.223         0.606        0.370           0.172           0.463
+seeds to start      7    20                 11 586.514    59.210              0.354                0.042                           0.663                             0.325                 0.211                   0.075                           0.740                             0.408            0.660              0.039            1.008              0.073                                    8.758                                      0.272             0.065                0.605             0.658             0.279         0.624        0.496           0.298           0.438
+  seeds always      1    20                 12 223.207     8.192              0.910                0.020                           0.583                             0.301                 0.244                   0.079                           0.441                             0.228            0.101              0.024            0.166              0.038                                    5.915                                      0.084             0.140                0.639             0.679             0.231         0.519        0.297           0.160           0.426
+  seeds always      4    20                 12 225.911     7.624              0.904                0.025                           0.546                             0.248                 0.258                   0.064                           0.410                             0.187            0.107              0.029            0.165              0.044                                    5.890                                      0.095             0.166                0.648             0.710             0.235         0.448        0.272           0.164           0.436
+  seeds always      7    20                 12 236.333    10.167              0.863                0.027                           0.622                             0.307                 0.303                   0.086                           0.565                             0.286            0.141              0.028            0.191              0.040                                    5.720                                      0.103             0.124                0.622             0.697             0.233         0.561        0.293           0.162           0.451
+
+--- m9_vs_seeds_off.csv ---
+                                measure  level      condition  seeds off  with the rule  difference      low     high  excludes zero
+                                 agents      1 seeds to start    307.568        274.009     -33.559  -71.306    4.188          False
+                                 agents      1   seeds always    307.568        223.207     -84.361 -107.863  -60.860           True
+                                 agents      4 seeds to start    526.991        405.354    -121.637 -176.370  -66.903           True
+                                 agents      4   seeds always    526.991        225.911    -301.080 -332.328 -269.831           True
+                                 agents      7 seeds to start    732.312        586.514    -145.799 -206.149  -85.448           True
+                                 agents      7   seeds always    732.312        236.333    -495.980 -512.391 -479.568           True
+                           both survive      1 seeds to start      0.700          0.700       0.000   -0.301    0.301          False
+                           both survive      1   seeds always      0.700          0.600      -0.100   -0.412    0.212          False
+                           both survive      4 seeds to start      0.850          0.700      -0.150   -0.420    0.120          False
+                           both survive      4   seeds always      0.850          0.600      -0.250   -0.532    0.032          False
+                           both survive      7 seeds to start      1.000          0.550      -0.450   -0.689   -0.211           True
+                           both survive      7   seeds always      1.000          0.600      -0.400   -0.635   -0.165           True
+                      time share shared      1 seeds to start      0.671          0.768       0.098    0.009    0.186           True
+                      time share shared      1   seeds always      0.671          0.910       0.239    0.180    0.297           True
+                      time share shared      4 seeds to start      0.383          0.532       0.150    0.069    0.230           True
+                      time share shared      4   seeds always      0.383          0.904       0.521    0.486    0.556           True
+                      time share shared      7 seeds to start      0.262          0.354       0.092    0.050    0.135           True
+                      time share shared      7   seeds always      0.262          0.863       0.601    0.572    0.630           True
+         encounters per 100 agent-steps      1 seeds to start      0.491          0.623       0.132   -0.258    0.522          False
+         encounters per 100 agent-steps      1   seeds always      0.491          0.583       0.092   -0.277    0.461          False
+         encounters per 100 agent-steps      4 seeds to start      1.195          0.688      -0.507   -0.980   -0.035           True
+         encounters per 100 agent-steps      4   seeds always      1.195          0.546      -0.649   -1.116   -0.183           True
+         encounters per 100 agent-steps      7 seeds to start      1.552          0.663      -0.889   -1.373   -0.405           True
+         encounters per 100 agent-steps      7   seeds always      1.552          0.622      -0.930   -1.403   -0.457           True
+                   fights per encounter      1 seeds to start      0.283          0.279      -0.005   -0.122    0.112          False
+                   fights per encounter      1   seeds always      0.283          0.244      -0.039   -0.154    0.076          False
+                   fights per encounter      4 seeds to start      0.180          0.247       0.068   -0.005    0.141          False
+                   fights per encounter      4   seeds always      0.180          0.258       0.078    0.000    0.156           True
+                   fights per encounter      7 seeds to start      0.183          0.211       0.029   -0.050    0.108          False
+                   fights per encounter      7   seeds always      0.183          0.303       0.120    0.031    0.210           True
+         stolen per agent per 100 steps      1 seeds to start      0.474          0.538       0.064   -0.283    0.410          False
+         stolen per agent per 100 steps      1   seeds always      0.474          0.441      -0.032   -0.338    0.274          False
+         stolen per agent per 100 steps      4 seeds to start      1.461          0.694      -0.767   -1.337   -0.198           True
+         stolen per agent per 100 steps      4   seeds always      1.461          0.410      -1.051   -1.604   -0.498           True
+         stolen per agent per 100 steps      7 seeds to start      1.983          0.740      -1.243   -1.911   -0.576           True
+         stolen per agent per 100 steps      7   seeds always      1.983          0.565      -1.418   -2.028   -0.808           True
+                        food share farm      1 seeds to start      0.364          0.257      -0.107   -0.202   -0.012           True
+                        food share farm      1   seeds always      0.364          0.101      -0.263   -0.325   -0.200           True
+                        food share farm      4 seeds to start      0.637          0.492      -0.145   -0.227   -0.063           True
+                        food share farm      4   seeds always      0.637          0.107      -0.531   -0.567   -0.494           True
+                        food share farm      7 seeds to start      0.742          0.660      -0.083   -0.122   -0.043           True
+                        food share farm      7   seeds always      0.742          0.141      -0.601   -0.630   -0.572           True
+                        farms per agent      1 seeds to start      0.627          0.431      -0.196   -0.364   -0.028           True
+                        farms per agent      1   seeds always      0.627          0.166      -0.462   -0.573   -0.350           True
+                        farms per agent      4 seeds to start      1.102          0.823      -0.279   -0.426   -0.132           True
+                        farms per agent      4   seeds always      1.102          0.165      -0.937   -1.002   -0.872           True
+                        farms per agent      7 seeds to start      1.178          1.008      -0.170   -0.247   -0.093           True
+                        farms per agent      7   seeds always      1.178          0.191      -0.987   -1.035   -0.940           True
+seeds picked up per agent per 100 steps      1 seeds to start      0.000          6.346       6.346    6.276    6.416           True
+seeds picked up per agent per 100 steps      1   seeds always      0.000          5.915       5.915    5.831    5.999           True
+seeds picked up per agent per 100 steps      4 seeds to start      0.000          7.183       7.183    6.956    7.410           True
+seeds picked up per agent per 100 steps      4   seeds always      0.000          5.890       5.890    5.795    5.985           True
+seeds picked up per agent per 100 steps      7 seeds to start      0.000          8.758       8.758    8.487    9.030           True
+seeds picked up per agent per 100 steps      7   seeds always      0.000          5.720       5.720    5.618    5.823           True
+                       Exploration gene      1 seeds to start      0.109          0.147       0.038   -0.018    0.095          False
+                       Exploration gene      1   seeds always      0.109          0.140       0.031   -0.004    0.066          False
+                       Exploration gene      4 seeds to start      0.113          0.108      -0.005   -0.039    0.030          False
+                       Exploration gene      4   seeds always      0.113          0.166       0.053    0.001    0.105           True
+                       Exploration gene      7 seeds to start      0.052          0.065       0.013   -0.012    0.038          False
+                       Exploration gene      7   seeds always      0.052          0.124       0.072    0.042    0.102           True
+                    Risk tolerance gene      1 seeds to start      0.651          0.692       0.042   -0.035    0.118          False
+                    Risk tolerance gene      1   seeds always      0.651          0.639      -0.012   -0.091    0.066          False
+                    Risk tolerance gene      4 seeds to start      0.602          0.650       0.048   -0.039    0.135          False
+                    Risk tolerance gene      4   seeds always      0.602          0.648       0.046   -0.027    0.120          False
+                    Risk tolerance gene      7 seeds to start      0.626          0.605      -0.021   -0.101    0.059          False
+                    Risk tolerance gene      7   seeds always      0.626          0.622      -0.005   -0.084    0.074          False
+                       Sociability gene      1 seeds to start      0.734          0.757       0.023   -0.040    0.086          False
+                       Sociability gene      1   seeds always      0.734          0.679      -0.055   -0.132    0.022          False
+                       Sociability gene      4 seeds to start      0.692          0.699       0.007   -0.064    0.079          False
+                       Sociability gene      4   seeds always      0.692          0.710       0.019   -0.068    0.105          False
+                       Sociability gene      7 seeds to start      0.602          0.658       0.057   -0.022    0.136          False
+                       Sociability gene      7   seeds always      0.602          0.697       0.095    0.006    0.185           True
+                       Cooperation gene      1 seeds to start      0.233          0.277       0.044   -0.015    0.102          False
+                       Cooperation gene      1   seeds always      0.233          0.231      -0.003   -0.062    0.057          False
+                       Cooperation gene      4 seeds to start      0.281          0.223      -0.058   -0.112   -0.004           True
+                       Cooperation gene      4   seeds always      0.281          0.235      -0.046   -0.115    0.022          False
+                       Cooperation gene      7 seeds to start      0.310          0.279      -0.030   -0.090    0.029          False
+                       Cooperation gene      7   seeds always      0.310          0.233      -0.076   -0.129   -0.024           True
+                           Farming gene      1 seeds to start      0.525          0.490      -0.034   -0.145    0.076          False
+                           Farming gene      1   seeds always      0.525          0.519      -0.006   -0.112    0.101          False
+                           Farming gene      4 seeds to start      0.664          0.606      -0.058   -0.134    0.017          False
+                           Farming gene      4   seeds always      0.664          0.448      -0.216   -0.305   -0.127           True
+                           Farming gene      7 seeds to start      0.570          0.624       0.053   -0.027    0.133          False
+                           Farming gene      7   seeds always      0.570          0.561      -0.009   -0.099    0.080          False
+                            Vision gene      1 seeds to start      0.342          0.338      -0.004   -0.061    0.052          False
+                            Vision gene      1   seeds always      0.342          0.297      -0.045   -0.099    0.010          False
+                            Vision gene      4 seeds to start      0.410          0.370      -0.040   -0.081    0.001          False
+                            Vision gene      4   seeds always      0.410          0.272      -0.138   -0.179   -0.097           True
+                            Vision gene      7 seeds to start      0.560          0.496      -0.065   -0.108   -0.022           True
+                            Vision gene      7   seeds always      0.560          0.293      -0.267   -0.301   -0.233           True
+                         Body size gene      1 seeds to start      0.160          0.132      -0.028   -0.092    0.036          False
+                         Body size gene      1   seeds always      0.160          0.160      -0.000   -0.055    0.055          False
+                         Body size gene      4 seeds to start      0.184          0.172      -0.013   -0.062    0.037          False
+                         Body size gene      4   seeds always      0.184          0.164      -0.020   -0.073    0.032          False
+                         Body size gene      7 seeds to start      0.408          0.298      -0.110   -0.192   -0.028           True
+                         Body size gene      7   seeds always      0.408          0.162      -0.246   -0.320   -0.172           True
+                         Expansion gene      1 seeds to start      0.464          0.419      -0.045   -0.147    0.056          False
+                         Expansion gene      1   seeds always      0.464          0.426      -0.038   -0.156    0.079          False
+                         Expansion gene      4 seeds to start      0.463          0.463       0.001   -0.096    0.097          False
+                         Expansion gene      4   seeds always      0.463          0.436      -0.027   -0.126    0.073          False
+                         Expansion gene      7 seeds to start      0.508          0.438      -0.070   -0.171    0.032          False
+                         Expansion gene      7   seeds always      0.508          0.451      -0.057   -0.151    0.037          False
+
+--- m9_what_changed.csv ---
+                                measure  seeds to start: levels that differ (of 3)  seeds always: levels that differ (of 3)
+                                 agents                                          2                                        3
+                           both survive                                          1                                        1
+                      time share shared                                          3                                        3
+         encounters per 100 agent-steps                                          2                                        2
+                   fights per encounter                                          0                                        2
+         stolen per agent per 100 steps                                          2                                        2
+                        food share farm                                          3                                        3
+                        farms per agent                                          3                                        3
+seeds picked up per agent per 100 steps                                          3                                        3
+                       Exploration gene                                          0                                        2
+                    Risk tolerance gene                                          0                                        0
+                       Sociability gene                                          0                                        1
+                       Cooperation gene                                          1                                        1
+                           Farming gene                                          0                                        1
+                            Vision gene                                          1                                        2
+                         Body size gene                                          1                                        1
+                         Expansion gene                                          0                                        0

@@ -36,6 +36,7 @@ class SocietyAgent(mesa.Agent):
         self.total_lost = 0.0    # Robbed from this agent.
         self.total_robbed = 0.0  # Robbed by this agent (part of total_stolen; farm raids are not).
         self.total_trade = 0.0   # Trade bonuses collected (Model 2).
+        self.seeds = 0           # Seeds carried (only used when config.SEED_MODE is on).
         self.next_trade_step = 0
         self.offspring = 0       # Children produced: the agent's realized fitness.
         # A genome is a dictionary of five tendencies between 0 and 1 (config.GENES):
@@ -547,9 +548,15 @@ class SocietyAgent(mesa.Agent):
 
         if site is None or self.resources < model.param("PLANT_MIN_RESOURCES"):
             return note, 0.0
+        # Seed rule: planting needs one seed, on top of the food cost.
+        if model.seed_mode != "off" and self.seeds < 1:
+            return note, 0.0
         if self.random.random() < self.traits["farming_tendency"]:
             cost = model.param("PLANT_COST")
             self.resources -= cost
+            if model.seed_mode != "off":
+                self.seeds -= 1
+                model.seeds[self.population]["used"] += 1
             model.plant_farm(site, self.population, self)
             return note + f" Planted a farm at {site} for population {self.population}.", cost
         return note, 0.0
@@ -687,6 +694,12 @@ class SocietyModel(mesa.Model):
         self.set_farm_growth()
         # Counters for the three-zone analysis (all cumulative).
         self.food_from = {p: {"farm": 0.0, "wild": 0.0, "raid": 0.0} for p in "AB"}
+        # The seed rule (see config.SEED_MODE) exists only on the three-zone map.
+        self.seed_mode = self.param("SEED_MODE") if self.zones else "off"
+        if self.seed_mode not in ("off", "start", "always"):
+            raise ValueError(f"Unknown seed mode: {self.seed_mode}")
+        # Running totals: seeds picked up in the shared land, seeds from own farms, seeds used.
+        self.seeds = {p: {"shared": 0, "farm": 0, "used": 0} for p in "AB"}
         self.zone_steps = {p: {"home": 0, "shared": 0, "rival": 0} for p in "AB"}
         self.encounters_in = {"A": 0, "S": 0, "B": 0}
         self.fights_in = {"A": 0, "S": 0, "B": 0}
@@ -712,6 +725,10 @@ class SocietyModel(mesa.Model):
             halves = [("A", 0, half), ("B", half, self.grid_size)]
             if self.zones:  # Everyone starts in its own homeland.
                 halves = [("A", 0, self.shared_first), ("B", self.shared_last + 1, self.grid_size)]
+                border = self.param("BORDER_START_ROWS")
+                if border:  # Only the rows of each homeland nearest the shared land.
+                    halves = [("A", self.shared_first - border, self.shared_first),
+                              ("B", self.shared_last + 1, self.shared_last + 1 + border)]
             if self.param("INTERLEAVED_START"):
                 halves = [("A", 0, self.grid_size), ("B", 0, self.grid_size)]
             for population, first_row, last_row in halves:
@@ -821,6 +838,8 @@ class SocietyModel(mesa.Model):
         for population in ["A", "B"]:
             for source in ["farm", "wild", "raid"]:
                 reporters[f"Population {population} food {source}"] = f"{population}_food_{source}"
+            for kind in ["shared", "farm", "used"]:
+                reporters[f"Population {population} seeds {kind}"] = f"{population}_seeds_{kind}"
             for zone in ["home", "shared", "rival"]:
                 reporters[f"Population {population} steps {zone}"] = f"{population}_steps_{zone}"
         for zone, label in [("A", "homeland A"), ("S", "shared land"), ("B", "homeland B")]:
@@ -1035,6 +1054,19 @@ class SocietyModel(mesa.Model):
                     self.food_from[agent.population]["farm"] += agent.turn_food
                 else:
                     self.food_from[agent.population]["raid"] += agent.turn_food
+            # Seed rule: eating wild food in the shared land gives a seed; in
+            # "start" mode so does eating from a farm of the agent's own population.
+            if self.seed_mode != "off" and food > 0:
+                source = None
+                if owner is None and self.row_zone[position[0]] == "S":
+                    source = "shared"
+                for agent in agents:
+                    kind = source
+                    if owner == agent.population and self.seed_mode == "start":
+                        kind = "farm"
+                    if kind and agent.seeds < self.param("SEED_CAPACITY"):
+                        agent.seeds += 1
+                        self.seeds[agent.population][kind] += 1
             if owner is None or food == 0:
                 continue
             self.harvested.add(position)  # Wears out the soil (Model 2). See update_soil().
@@ -1396,6 +1428,8 @@ class SocietyModel(mesa.Model):
         if self.soil and self.fertile:
             self.average_fertility = sum(self.fertility.values()) / len(self.fertile)
         for population in ["A", "B"]:
+            for kind, count in self.seeds[population].items():
+                setattr(self, f"{population}_seeds_{kind}", count)
             for source, amount in self.food_from[population].items():
                 setattr(self, f"{population}_food_{source}", amount)
             for zone, count in self.zone_steps[population].items():

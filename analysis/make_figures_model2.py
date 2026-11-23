@@ -829,6 +829,121 @@ def figures_m8():
     save_table(pd.DataFrame(rows), "m8_raiders_vs_farmers.csv")
 
 
+# ---------------------------------------------------------------------------
+# M9: the optional seed rule (planting a farm needs a seed)
+# ---------------------------------------------------------------------------
+
+def figures_m9():
+    data = load("m9_timeseries.csv.gz")
+    keys = ["condition", "level", "seed"]
+    conditions = [("seeds off", NEUTRAL, "D"), ("seeds to start", "#2563eb", "o"), ("seeds always", "#b91c1c", "s")]
+    levels = [SCARCE, MIDDLE, PLENTIFUL]
+    count = data["seed"].nunique()
+
+    # One row per run, over the second half of the run.
+    rates = behaviour(data, keys, STEPS // 2, STEPS).set_index(keys)
+    first = data[data["Timestep"] == STEPS // 2].set_index(keys)
+    last = data[data["Timestep"] == STEPS].set_index(keys)
+    late = data[data["Timestep"] >= STEPS // 2].copy()
+    late["farms per agent"] = ((late["Population A farms"] + late["Population B farms"])
+                               / late["Total population"].replace(0, np.nan))
+    rates["farms per agent"] = late.groupby(keys)["farms per agent"].mean()
+    lived = sum(last[f"Population {p} agent steps"] - first[f"Population {p} agent steps"] for p in "AB")
+    picked = sum(last[f"Population {p} seeds {kind}"] - first[f"Population {p} seeds {kind}"]
+                 for p in "AB" for kind in ["shared", "farm"])
+    rates["seeds picked up per agent per 100 steps"] = 100 * picked / lived.replace(0, np.nan)
+    rates = rates.reset_index()
+    final = final_rows(data, keys)
+    measures = [("agents", "Agents alive (both populations)"),
+                ("both survive", "Share of runs where both populations survive"),
+                ("time share shared", "Share of time in the shared land"),
+                ("encounters per 100 agent-steps", "Meetings per 100 agent-timesteps"),
+                ("fights per encounter", "Fights per meeting"),
+                ("stolen per agent per 100 steps", "Resources stolen per agent per 100 timesteps"),
+                ("food share farm", "Share of food from own farms"),
+                ("farms per agent", "Farms per agent"),
+                ("seeds picked up per agent per 100 steps", "Seeds picked up per agent per 100 timesteps")]
+
+    def draw(axis, table, column):
+        for index, (condition, color, marker) in enumerate(conditions):
+            means, halves = [], []
+            for level in levels:
+                mean, half, _ = mean_ci(table[(table["condition"] == condition) & (table["level"] == level)][column])
+                means.append(mean)
+                halves.append(half)
+            axis.errorbar(np.arange(3) + (index - 1) * 0.12, means, yerr=halves, color=color, marker=marker,
+                          markersize=8, capsize=4, label=condition.capitalize(), markeredgecolor="white")
+        axis.set_xticks(range(3))
+        axis.set_xticklabels([LEVEL_NAME[level] for level in levels])
+        axis.set_xlim(-0.5, 2.5)
+
+    figure, axes = plt.subplots(3, 3, figsize=(19, 14))
+    for axis, (column, title) in zip(axes.ravel(), measures):
+        draw(axis, rates, column)
+        axis.set_title(title, fontsize=14)
+        axis.set_ylim(bottom=0)
+    axes[0, 0].legend(loc="best")
+    figure.suptitle("M9. Does needing a seed to plant a farm change behaviour?\n"
+                    f"(second half of each run; mean and 95% interval across {count} runs; x axis = homelands)", fontsize=18)
+    figure.tight_layout()
+    save(figure, "m9_behaviour.png")
+
+    figure, axes = plt.subplots(2, 4, figsize=(20, 9), sharey=True)
+    for axis, gene in zip(axes.ravel(), GENES):
+        draw(axis, final, f"gene {gene}")
+        axis.set_title(LABELS[gene])
+        axis.set_ylim(0, 1)
+    for axis in axes[:, 0]:
+        axis.set_ylabel("Final gene value")
+    axes[0, 0].legend(loc="best")
+    figure.suptitle(f"M9. Evolved genes with and without the seed rule (mean and 95% interval across {count} runs)",
+                    fontsize=18)
+    figure.tight_layout()
+    save(figure, "m9_genes.png")
+
+    # Table: every measure and gene, per condition and level.
+    columns = [column for column, _ in measures]
+    rows = []
+    for condition, _, _ in conditions:
+        for level in levels:
+            group = rates[(rates["condition"] == condition) & (rates["level"] == level)]
+            genes = final[(final["condition"] == condition) & (final["level"] == level)]
+            row = {"condition": condition, "level": level, "runs": len(group),
+                   "runs both survive": int(group["both survive"].sum())}
+            for column in columns:
+                if column == "both survive":
+                    continue
+                mean, half, _ = mean_ci(group[column])
+                row[column] = mean
+                row[column + " ±"] = half
+            for gene in GENES:
+                row[LABELS[gene] + " gene"] = genes[f"gene {gene}"].mean()
+            rows.append(row)
+    save_table(pd.DataFrame(rows), "m9_seed_rule.csv")
+
+    # Table: each seed condition against "seeds off" at the same level.
+    # "excludes zero" means the 95% interval of the difference does not contain zero.
+    rows = []
+    sources = [(rates, column, column) for column in columns] + [(final, f"gene {gene}", LABELS[gene] + " gene") for gene in GENES]
+    for table, column, name in sources:
+        for level in levels:
+            off = table[(table["condition"] == "seeds off") & (table["level"] == level)][column]
+            for condition in ["seeds to start", "seeds always"]:
+                with_rule = table[(table["condition"] == condition) & (table["level"] == level)][column]
+                row = {"measure": name, "level": level, "condition": condition,
+                       "seeds off": off.mean(), "with the rule": with_rule.mean()}
+                difference = compare(with_rule, off)
+                row.update({"difference": difference["difference"], "low": difference["low"], "high": difference["high"]})
+                row["excludes zero"] = bool(difference["low"] > 0 or difference["high"] < 0)
+                rows.append(row)
+    versus = pd.DataFrame(rows)
+    save_table(versus, "m9_vs_seeds_off.csv")
+    summary = versus.groupby(["measure", "condition"], sort=False)["excludes zero"].sum().unstack()
+    summary = summary.reset_index().rename(columns={"seeds to start": "seeds to start: levels that differ (of 3)",
+                                                    "seeds always": "seeds always: levels that differ (of 3)"})
+    save_table(summary, "m9_what_changed.csv")
+
+
 # Regenerate every Model 2 figure and table. Name some to make only those,
 # for example: python analysis/make_figures_model2.py m6 m8
 if __name__ == "__main__":
@@ -854,6 +969,8 @@ if __name__ == "__main__":
         figures_m6()
     if want("m8"):
         figures_m8()
+    if want("m9"):
+        figures_m9()
     if not wanted:
         path = os.path.join(TABLES, "all_tables.txt")
         with open(path, "w") as file:

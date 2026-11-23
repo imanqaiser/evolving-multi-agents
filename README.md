@@ -8,6 +8,9 @@ how resource scarcity changes which traits evolve.
 There are two versions of the model. Model 1 has five genes. Model 2 (`version=2` in `model.py`)
 adds body genes, an explicit fitness function, soil that wears out and a trade bonus.
 
+Model 2 also has an optional seed rule, off by default (`SEED_MODE` in `config.py`): planting a farm
+needs a seed, which agents pick up by eating wild food in the shared land.
+
 ## Setup
 
 Needs Python 3.12 or newer.
@@ -36,6 +39,7 @@ three-zone map; its "Raiders vs Farmers" start is a hand-set scenario, not an ev
 python experiments/e1_drift.py            # Model 1: e1 to e5, one script each
 python experiments/m_experiments.py m2    # Model 2: m0, m2, m3, m4, m5, m7
 python experiments/m_experiments.py m8    # Raiders vs Farmers (hand-set genomes, not evolved)
+python experiments/m_experiments.py m9    # Optional seed rule: off, to start, always
 ```
 
 Results are saved in `results/`. They are already in the repository, so this step can be skipped.

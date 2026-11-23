@@ -178,6 +178,23 @@ DEFENDER_ADVANTAGE = 1.0
 # population's homeland its own abundance level. None = both use the run's level.
 HOMELAND_LEVELS = None
 
+# 7. Seeds (three-zone map only; optional, experiment m9). Off by default.
+#   "off"     planting a farm needs no seed (the normal Model 2 rule)
+#   "start"   eating wild food in the shared land, or food from a farm of the
+#             agent's own population, gives one seed; planting uses one up
+#   "always"  only wild food in the shared land gives a seed
+SEED_MODE = "off"
+SEED_CAPACITY = 3        # Most seeds one agent can carry. Children are born with none.
+# A number starts each population in that many rows of its homeland nearest
+# the shared land (None = anywhere in its homeland).
+BORDER_START_ROWS = None
+# The value experiment m9 uses in all three of its conditions. Set in a pilot on
+# seeds 9000-9005 with SEED_MODE "always", then frozen. The first try, 6 rows,
+# failed: both populations survived in only 3, 5 and 2 of 6 runs (scarce,
+# middle, plentiful). Changed once to 2 rows, so that every starting agent
+# sees the shared land on its first turn: 5, 4 and 5 of 6 runs.
+M9_BORDER_START_ROWS = 2
+
 # 5. Model 2's own abundance scale: seven levels on a ratio scale.
 # Calibrated on pilot seeds (results/model2/calibration.txt), then frozen.
 M2_MULTIPLIERS = {1: 0.8, 2: 1.2, 3: 1.7, 4: 2.5, 5: 3.7, 6: 5.5, 7: 8.0}

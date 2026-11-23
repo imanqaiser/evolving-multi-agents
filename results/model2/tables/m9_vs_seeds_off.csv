@@ -1,0 +1,103 @@
+measure,level,condition,seeds off,with the rule,difference,low,high,excludes zero
+agents,1,seeds to start,307.6,274,-33.56,-71.31,4.188,False
+agents,1,seeds always,307.6,223.2,-84.36,-107.9,-60.86,True
+agents,4,seeds to start,527,405.4,-121.6,-176.4,-66.9,True
+agents,4,seeds always,527,225.9,-301.1,-332.3,-269.8,True
+agents,7,seeds to start,732.3,586.5,-145.8,-206.1,-85.45,True
+agents,7,seeds always,732.3,236.3,-496,-512.4,-479.6,True
+both survive,1,seeds to start,0.7,0.7,0,-0.301,0.301,False
+both survive,1,seeds always,0.7,0.6,-0.1,-0.4116,0.2116,False
+both survive,4,seeds to start,0.85,0.7,-0.15,-0.4203,0.1203,False
+both survive,4,seeds always,0.85,0.6,-0.25,-0.5324,0.03241,False
+both survive,7,seeds to start,1,0.55,-0.45,-0.6889,-0.2111,True
+both survive,7,seeds always,1,0.6,-0.4,-0.6352,-0.1648,True
+time share shared,1,seeds to start,0.6708,0.7683,0.0975,0.009143,0.1859,True
+time share shared,1,seeds always,0.6708,0.9097,0.2389,0.1804,0.2973,True
+time share shared,4,seeds to start,0.3826,0.5321,0.1495,0.0689,0.2301,True
+time share shared,4,seeds always,0.3826,0.9037,0.5211,0.4858,0.5563,True
+time share shared,7,seeds to start,0.2621,0.3542,0.09214,0.04954,0.1347,True
+time share shared,7,seeds always,0.2621,0.8628,0.6008,0.572,0.6295,True
+encounters per 100 agent-steps,1,seeds to start,0.4906,0.6227,0.1321,-0.258,0.5222,False
+encounters per 100 agent-steps,1,seeds always,0.4906,0.5831,0.09248,-0.2765,0.4615,False
+encounters per 100 agent-steps,4,seeds to start,1.195,0.6877,-0.5074,-0.9795,-0.03537,True
+encounters per 100 agent-steps,4,seeds always,1.195,0.5457,-0.6495,-1.116,-0.1829,True
+encounters per 100 agent-steps,7,seeds to start,1.552,0.6625,-0.8894,-1.373,-0.4054,True
+encounters per 100 agent-steps,7,seeds always,1.552,0.6218,-0.9301,-1.403,-0.4573,True
+fights per encounter,1,seeds to start,0.2835,0.2787,-0.004749,-0.1216,0.1121,False
+fights per encounter,1,seeds always,0.2835,0.2442,-0.03934,-0.1542,0.07557,False
+fights per encounter,4,seeds to start,0.1796,0.2472,0.06759,-0.005441,0.1406,False
+fights per encounter,4,seeds always,0.1796,0.2576,0.07801,0.0001669,0.1559,True
+fights per encounter,7,seeds to start,0.1825,0.2113,0.02877,-0.05048,0.108,False
+fights per encounter,7,seeds always,0.1825,0.3029,0.1204,0.03081,0.21,True
+stolen per agent per 100 steps,1,seeds to start,0.4736,0.5376,0.06396,-0.2826,0.4105,False
+stolen per agent per 100 steps,1,seeds always,0.4736,0.4415,-0.03217,-0.338,0.2736,False
+stolen per agent per 100 steps,4,seeds to start,1.461,0.6936,-0.7675,-1.337,-0.1976,True
+stolen per agent per 100 steps,4,seeds always,1.461,0.4103,-1.051,-1.604,-0.4976,True
+stolen per agent per 100 steps,7,seeds to start,1.983,0.7401,-1.243,-1.911,-0.5757,True
+stolen per agent per 100 steps,7,seeds always,1.983,0.5653,-1.418,-2.028,-0.8083,True
+food share farm,1,seeds to start,0.3637,0.2569,-0.1069,-0.202,-0.01177,True
+food share farm,1,seeds always,0.3637,0.1012,-0.2625,-0.325,-0.2001,True
+food share farm,4,seeds to start,0.6373,0.4923,-0.1451,-0.2274,-0.06282,True
+food share farm,4,seeds always,0.6373,0.1067,-0.5306,-0.5674,-0.4938,True
+food share farm,7,seeds to start,0.7425,0.6598,-0.08272,-0.122,-0.0434,True
+food share farm,7,seeds always,0.7425,0.1413,-0.6012,-0.6302,-0.5722,True
+farms per agent,1,seeds to start,0.6272,0.4313,-0.1959,-0.3642,-0.02766,True
+farms per agent,1,seeds always,0.6272,0.1656,-0.4617,-0.5734,-0.3499,True
+farms per agent,4,seeds to start,1.102,0.8228,-0.2789,-0.4262,-0.1316,True
+farms per agent,4,seeds always,1.102,0.1645,-0.9371,-1.002,-0.8723,True
+farms per agent,7,seeds to start,1.178,1.008,-0.1701,-0.2471,-0.09305,True
+farms per agent,7,seeds always,1.178,0.1912,-0.9872,-1.035,-0.9399,True
+seeds picked up per agent per 100 steps,1,seeds to start,0,6.346,6.346,6.276,6.416,True
+seeds picked up per agent per 100 steps,1,seeds always,0,5.915,5.915,5.831,5.999,True
+seeds picked up per agent per 100 steps,4,seeds to start,0,7.183,7.183,6.956,7.41,True
+seeds picked up per agent per 100 steps,4,seeds always,0,5.89,5.89,5.795,5.985,True
+seeds picked up per agent per 100 steps,7,seeds to start,0,8.758,8.758,8.487,9.03,True
+seeds picked up per agent per 100 steps,7,seeds always,0,5.72,5.72,5.618,5.823,True
+Exploration gene,1,seeds to start,0.1091,0.1475,0.0384,-0.01835,0.09515,False
+Exploration gene,1,seeds always,0.1091,0.1404,0.03137,-0.003763,0.06649,False
+Exploration gene,4,seeds to start,0.1133,0.1085,-0.004851,-0.03944,0.02974,False
+Exploration gene,4,seeds always,0.1133,0.1665,0.05318,0.001246,0.1051,True
+Exploration gene,7,seeds to start,0.05187,0.06453,0.01266,-0.01229,0.0376,False
+Exploration gene,7,seeds always,0.05187,0.1239,0.07206,0.04223,0.1019,True
+Risk tolerance gene,1,seeds to start,0.6508,0.6924,0.04156,-0.03489,0.118,False
+Risk tolerance gene,1,seeds always,0.6508,0.6385,-0.01229,-0.09093,0.06634,False
+Risk tolerance gene,4,seeds to start,0.602,0.6499,0.04797,-0.03857,0.1345,False
+Risk tolerance gene,4,seeds always,0.602,0.648,0.04608,-0.02747,0.1196,False
+Risk tolerance gene,7,seeds to start,0.6264,0.6051,-0.02125,-0.101,0.05854,False
+Risk tolerance gene,7,seeds always,0.6264,0.6216,-0.004828,-0.08386,0.0742,False
+Sociability gene,1,seeds to start,0.7336,0.7566,0.02301,-0.04025,0.08627,False
+Sociability gene,1,seeds always,0.7336,0.6791,-0.05453,-0.1315,0.02248,False
+Sociability gene,4,seeds to start,0.6916,0.6988,0.007224,-0.06443,0.07888,False
+Sociability gene,4,seeds always,0.6916,0.7104,0.01882,-0.06786,0.1055,False
+Sociability gene,7,seeds to start,0.6015,0.6584,0.05685,-0.02223,0.1359,False
+Sociability gene,7,seeds always,0.6015,0.697,0.09547,0.005591,0.1853,True
+Cooperation gene,1,seeds to start,0.2333,0.2771,0.04374,-0.01494,0.1024,False
+Cooperation gene,1,seeds always,0.2333,0.2305,-0.002798,-0.06241,0.05681,False
+Cooperation gene,4,seeds to start,0.2812,0.2234,-0.05784,-0.1119,-0.003762,True
+Cooperation gene,4,seeds always,0.2812,0.2351,-0.04612,-0.1146,0.02235,False
+Cooperation gene,7,seeds to start,0.3095,0.279,-0.03049,-0.09022,0.02924,False
+Cooperation gene,7,seeds always,0.3095,0.233,-0.0765,-0.1289,-0.02412,True
+Farming gene,1,seeds to start,0.5245,0.4902,-0.03435,-0.1451,0.07638,False
+Farming gene,1,seeds always,0.5245,0.5188,-0.005724,-0.1121,0.1006,False
+Farming gene,4,seeds to start,0.664,0.6055,-0.05849,-0.1336,0.01664,False
+Farming gene,4,seeds always,0.664,0.448,-0.216,-0.3054,-0.1266,True
+Farming gene,7,seeds to start,0.5705,0.6236,0.05315,-0.02656,0.1329,False
+Farming gene,7,seeds always,0.5705,0.5612,-0.009226,-0.09867,0.08022,False
+Vision gene,1,seeds to start,0.3419,0.3375,-0.004319,-0.06067,0.05203,False
+Vision gene,1,seeds always,0.3419,0.2974,-0.04451,-0.09859,0.009565,False
+Vision gene,4,seeds to start,0.4099,0.3704,-0.03953,-0.08052,0.001463,False
+Vision gene,4,seeds always,0.4099,0.272,-0.1379,-0.1792,-0.0967,True
+Vision gene,7,seeds to start,0.5604,0.4956,-0.06486,-0.1077,-0.02207,True
+Vision gene,7,seeds always,0.5604,0.2933,-0.2671,-0.3009,-0.2333,True
+Body size gene,1,seeds to start,0.1603,0.1324,-0.02797,-0.09241,0.03647,False
+Body size gene,1,seeds always,0.1603,0.1603,-3.53e-05,-0.05521,0.05514,False
+Body size gene,4,seeds to start,0.1843,0.1717,-0.01263,-0.06214,0.03688,False
+Body size gene,4,seeds always,0.1843,0.1639,-0.02035,-0.07283,0.03214,False
+Body size gene,7,seeds to start,0.4076,0.2978,-0.1099,-0.1916,-0.02813,True
+Body size gene,7,seeds always,0.4076,0.162,-0.2457,-0.3196,-0.1717,True
+Expansion gene,1,seeds to start,0.464,0.4185,-0.04549,-0.1466,0.05562,False
+Expansion gene,1,seeds always,0.464,0.4256,-0.03842,-0.1559,0.0791,False
+Expansion gene,4,seeds to start,0.4626,0.4632,0.0006114,-0.09556,0.09678,False
+Expansion gene,4,seeds always,0.4626,0.4356,-0.02696,-0.1265,0.07256,False
+Expansion gene,7,seeds to start,0.5081,0.4384,-0.06975,-0.1713,0.03184,False
+Expansion gene,7,seeds always,0.5081,0.4513,-0.05681,-0.1507,0.03705,False
